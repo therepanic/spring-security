@@ -119,6 +119,9 @@ public final class CsrfFilter extends OncePerRequestFilter {
 		}
 		CsrfToken csrfToken = deferredCsrfToken.get();
 		String actualToken = this.requestHandler.resolveCsrfTokenValue(request, csrfToken);
+		if (actualToken != null && this.logger.isTraceEnabled()) {
+			this.logger.trace(LogMessage.format("Found a CSRF token in the request"));
+		}
 		if (!equalsConstantTime(csrfToken.getToken(), actualToken)) {
 			boolean missingToken = deferredCsrfToken.isGenerated();
 			this.logger
@@ -211,7 +214,7 @@ public final class CsrfFilter extends OncePerRequestFilter {
 
 		@Override
 		public String toString() {
-			return "CsrfNotRequired " + this.allowedMethods;
+			return "IsNotHttpMethod " + this.allowedMethods;
 		}
 
 	}

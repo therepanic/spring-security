@@ -143,10 +143,11 @@ spring:
   security:
     saml2:
       relyingparty:
-        okta:
-          identityprovider:
-            entity-id: ...
-            singlesignon.sign-request: false
+        registration:
+          okta:
+            assertingparty:
+              entity-id: ...
+              singlesignon.sign-request: false
 ----
 
 Java::
@@ -155,7 +156,7 @@ Java::
 ----
 RelyingPartyRegistration relyingPartyRegistration = RelyingPartyRegistration.withRegistrationId("okta")
         // ...
-        .assertingPartyMetadata(party -> party
+        .assertingPartyMetadata((party) -> party
             // ...
             .wantAuthnRequestsSigned(false)
         )
@@ -238,7 +239,7 @@ Java::
 ----
 RelyingPartyRegistration relyingPartyRegistration = RelyingPartyRegistration.withRegistrationId("okta")
         // ...
-        .assertingPartyMetadata(party -> party
+        .assertingPartyMetadata((party) -> party
             // ...
             .singleSignOnServiceBinding(Saml2MessageBinding.POST)
         )
