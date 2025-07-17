@@ -81,15 +81,7 @@ public class PermitAllSupportTests {
 		assertThatExceptionOfType(BeanCreationException.class)
 			.isThrownBy(() -> this.spring.register(NoAuthorizedUrlsConfig.class).autowire())
 			.withMessageContaining(
-					"permitAll only works with either HttpSecurity.authorizeRequests() or HttpSecurity.authorizeHttpRequests()");
-	}
-
-	@Test
-	public void configureWhenBothAuthorizeRequestsAndAuthorizeHttpRequestsThenException() {
-		assertThatExceptionOfType(BeanCreationException.class)
-			.isThrownBy(() -> this.spring.register(PermitAllConfigWithBothConfigs.class).autowire())
-			.withMessageContaining(
-					"permitAll only works with either HttpSecurity.authorizeRequests() or HttpSecurity.authorizeHttpRequests()");
+					"permitAll only works with HttpSecurity.authorizeHttpRequests(). Please define one.");
 	}
 
 	@Configuration
@@ -100,7 +92,7 @@ public class PermitAllSupportTests {
 		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 			// @formatter:off
 			http
-				.authorizeRequests((requests) -> requests
+				.authorizeHttpRequests((requests) -> requests
 					.anyRequest().authenticated())
 				.formLogin((login) -> login
 					.loginPage("/xyz").permitAll()
@@ -119,27 +111,6 @@ public class PermitAllSupportTests {
 		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 			// @formatter:off
 			http
-				.authorizeHttpRequests((authorize) -> authorize
-					.anyRequest().authenticated())
-				.formLogin((login) -> login
-					.loginPage("/xyz").permitAll()
-					.loginProcessingUrl("/abc?def").permitAll());
-			return http.build();
-			// @formatter:on
-		}
-
-	}
-
-	@Configuration
-	@EnableWebSecurity
-	static class PermitAllConfigWithBothConfigs {
-
-		@Bean
-		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-			// @formatter:off
-			http
-				.authorizeRequests((requests) -> requests
-					.anyRequest().authenticated())
 				.authorizeHttpRequests((authorize) -> authorize
 					.anyRequest().authenticated())
 				.formLogin((login) -> login

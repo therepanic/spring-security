@@ -40,7 +40,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher
  *     @Bean
  *     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
  *         http {
- *             authorizeRequests {
+ *             authorizeHttpRequests {
  *                 authorize("/public", permitAll)
  *                 authorize(anyRequest, authenticated)
  *             }
@@ -106,7 +106,8 @@ class HttpSecurityDsl(private val http: HttpSecurity, private val init: HttpSecu
         configurer: C,
         configuration: C.() -> Unit = { }
     ): C {
-        return this.http.apply(configurer).apply(configuration)
+        this.http.with(configurer, configuration)
+        return configurer
     }
 
     /**
@@ -239,39 +240,6 @@ class HttpSecurityDsl(private val http: HttpSecurity, private val init: HttpSecu
     fun formLogin(formLoginConfiguration: FormLoginDsl.() -> Unit) {
         val loginCustomizer = FormLoginDsl().apply(formLoginConfiguration).get()
         this.http.formLogin(loginCustomizer)
-    }
-
-    /**
-     * Allows restricting access based upon the [HttpServletRequest]
-     *
-     * Example:
-     *
-     * ```
-     * @Configuration
-     * @EnableWebSecurity
-     * class SecurityConfig {
-     *
-     *     @Bean
-     *     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-     *         http {
-     *             authorizeRequests {
-     *                 authorize("/public", permitAll)
-     *                 authorize(anyRequest, authenticated)
-     *             }
-     *         }
-     *         return http.build()
-     *     }
-     * }
-     * ```
-     *
-     * @param authorizeRequestsConfiguration custom configuration that specifies
-     * access for requests
-     * @see [AuthorizeRequestsDsl]
-     */
-    @Deprecated(message = "Since 6.4. Use authorizeHttpRequests instead")
-    fun authorizeRequests(authorizeRequestsConfiguration: AuthorizeRequestsDsl.() -> Unit) {
-        val authorizeRequestsCustomizer = AuthorizeRequestsDsl().apply(authorizeRequestsConfiguration).get()
-        this.http.authorizeRequests(authorizeRequestsCustomizer)
     }
 
     /**
