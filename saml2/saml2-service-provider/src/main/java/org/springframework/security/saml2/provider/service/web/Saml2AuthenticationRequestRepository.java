@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.saml2.provider.service.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 
@@ -36,7 +37,7 @@ public interface Saml2AuthenticationRequestRepository<T extends AbstractSaml2Aut
 	 * @return the {@link AbstractSaml2AuthenticationRequest} or {@code null} if it is not
 	 * present
 	 */
-	T loadAuthenticationRequest(HttpServletRequest request);
+	@Nullable T loadAuthenticationRequest(HttpServletRequest request);
 
 	/**
 	 * Saves the current authentication request using the {@link HttpServletRequest} and
@@ -55,6 +56,6 @@ public interface Saml2AuthenticationRequestRepository<T extends AbstractSaml2Aut
 	 * @return the removed {@link AbstractSaml2AuthenticationRequest} or {@code null} if
 	 * it is not present
 	 */
-	T removeAuthenticationRequest(HttpServletRequest request, HttpServletResponse response);
+	@Nullable T removeAuthenticationRequest(HttpServletRequest request, HttpServletResponse response);
 
 }

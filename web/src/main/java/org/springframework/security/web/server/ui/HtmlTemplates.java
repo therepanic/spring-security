@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,8 +87,8 @@ final class HtmlTemplates {
 		String render() {
 			String template = this.template;
 			for (String key : this.values.keySet()) {
-				String pattern = Pattern.quote("{{" + key + "}}");
-				template = template.replaceAll(pattern, this.values.get(key));
+				String pattern = "{{" + key + "}}";
+				template = template.replace(pattern, this.values.get(key));
 			}
 
 			String unusedPlaceholders = Pattern.compile("\\{\\{([a-zA-Z0-9]+)}}")

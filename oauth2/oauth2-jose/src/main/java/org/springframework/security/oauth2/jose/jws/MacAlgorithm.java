@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.oauth2.jose.jws;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * An enumeration of the cryptographic algorithms defined by the JSON Web Algorithms (JWA)
@@ -69,7 +71,7 @@ public enum MacAlgorithm implements JwsAlgorithm {
 	 * @param name the algorithm name
 	 * @return the resolved {@code MacAlgorithm}, or {@code null} if not found
 	 */
-	public static MacAlgorithm from(String name) {
+	public static @Nullable MacAlgorithm from(String name) {
 		for (MacAlgorithm algorithm : values()) {
 			if (algorithm.getName().equals(name)) {
 				return algorithm;

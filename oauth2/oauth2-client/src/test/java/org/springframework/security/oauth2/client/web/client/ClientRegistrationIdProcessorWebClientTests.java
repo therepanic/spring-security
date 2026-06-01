@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,16 @@
 
 package org.springframework.security.oauth2.client.web.client;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.client.OAuth2AuthorizeRequest;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
@@ -69,7 +73,13 @@ class ClientRegistrationIdProcessorWebClientTests extends AbstractMockServerClie
 		ServletOAuth2AuthorizedClientExchangeFilterFunction oauth2Client = new ServletOAuth2AuthorizedClientExchangeFilterFunction(
 				authorizedClientManager);
 
-		WebClient.Builder builder = WebClient.builder().filter(oauth2Client).baseUrl(this.baseUrl);
+		WebClient.Builder builder = WebClient.builder()
+			.defaultRequest((requestSpec) -> requestSpec.attributes((attrs) -> {
+				attrs.put(HttpServletRequest.class.getName(), new MockHttpServletRequest());
+				attrs.put(HttpServletResponse.class.getName(), new MockHttpServletResponse());
+			}))
+			.filter(oauth2Client)
+			.baseUrl(this.baseUrl);
 
 		ArgumentCaptor<OAuth2AuthorizeRequest> authorizeRequest = ArgumentCaptor.forClass(OAuth2AuthorizeRequest.class);
 		given(authorizedClientManager.authorize(authorizeRequest.capture())).willReturn(this.authorizedClient);

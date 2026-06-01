@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,7 +169,7 @@ public class LdapProviderBeanDefinitionParserTests {
 		this.appCtx = new InMemoryXmlApplicationContext("<ldap-server />" + "<authentication-manager>"
 				+ "  <ldap-authentication-provider user-dn-pattern='uid={0},ou=${udp}' group-search-filter='${gsf}={0}' />"
 				+ "</authentication-manager>"
-				+ "<b:bean id='org.springframework.beans.factory.config.PropertyPlaceholderConfigurer' class='org.springframework.beans.factory.config.PropertyPlaceholderConfigurer' />");
+				+ "<b:bean id='org.springframework.context.support.PropertySourcesPlaceholderConfigurer' class='org.springframework.context.support.PropertySourcesPlaceholderConfigurer' />");
 
 		ProviderManager providerManager = this.appCtx.getBean(BeanIds.AUTHENTICATION_MANAGER, ProviderManager.class);
 		assertThat(providerManager.getProviders()).hasSize(1);

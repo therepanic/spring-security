@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,9 @@ public class ConcurrentSessionControlAuthenticationStrategy
 			// We permit unlimited logins
 			return;
 		}
-		List<SessionInformation> sessions = this.sessionRegistry.getAllSessions(authentication.getPrincipal(), false);
+		Object principal = authentication.getPrincipal();
+		Assert.notNull(principal, "Authentication.getPrincipal() cannot be null");
+		List<SessionInformation> sessions = this.sessionRegistry.getAllSessions(principal, false);
 		int sessionCount = sessions.size();
 		if (sessionCount < allowedSessions) {
 			// They haven't got too many login sessions running at present

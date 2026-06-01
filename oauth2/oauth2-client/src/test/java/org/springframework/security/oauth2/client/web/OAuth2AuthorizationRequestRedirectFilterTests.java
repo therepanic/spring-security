@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.security.oauth2.client.web;
 
-import java.lang.reflect.Constructor;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,7 +42,6 @@ import org.springframework.security.oauth2.client.registration.TestClientRegistr
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.savedrequest.RequestCache;
-import org.springframework.util.ClassUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -87,9 +85,8 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 
 	@Test
 	public void constructorWhenClientRegistrationRepositoryIsNullThenThrowIllegalArgumentException() {
-		Constructor<OAuth2AuthorizationRequestRedirectFilter> constructor = ClassUtils.getConstructorIfAvailable(
-				OAuth2AuthorizationRequestRedirectFilter.class, ClientRegistrationRepository.class);
-		assertThatIllegalArgumentException().isThrownBy(() -> constructor.newInstance(null));
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> new OAuth2AuthorizationRequestRedirectFilter((ClientRegistrationRepository) null));
 	}
 
 	@Test
@@ -100,9 +97,8 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 
 	@Test
 	public void constructorWhenAuthorizationRequestResolverIsNullThenThrowIllegalArgumentException() {
-		Constructor<OAuth2AuthorizationRequestRedirectFilter> constructor = ClassUtils.getConstructorIfAvailable(
-				OAuth2AuthorizationRequestRedirectFilter.class, OAuth2AuthorizationRequestResolver.class);
-		assertThatIllegalArgumentException().isThrownBy(() -> constructor.newInstance(null));
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> new OAuth2AuthorizationRequestRedirectFilter((OAuth2AuthorizationRequestResolver) null));
 	}
 
 	@Test
@@ -183,7 +179,7 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 		verifyNoMoreInteractions(filterChain);
 		assertThat(response.getRedirectedUrl()).matches("https://example.com/login/oauth/authorize\\?"
 				+ "response_type=code&client_id=client-id&" + "scope=read:user&state=.{15,}&"
-				+ "redirect_uri=http://localhost/login/oauth2/code/registration-id");
+				+ "redirect_uri=http://localhost/login/oauth2/code/registration-id&code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256");
 	}
 
 	@Test
@@ -215,7 +211,7 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 		verifyNoMoreInteractions(filterChain);
 		assertThat(response.getRedirectedUrl()).matches("https://example.com/login/oauth/authorize\\?"
 				+ "response_type=code&client_id=client-id&" + "scope=read:user&state=.{15,}&"
-				+ "redirect_uri=http://localhost/login/oauth2/code/registration-id");
+				+ "redirect_uri=http://localhost/login/oauth2/code/registration-id&code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256");
 	}
 
 	@Test
@@ -231,7 +227,7 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 		verify(filterChain).doFilter(any(HttpServletRequest.class), any(HttpServletResponse.class));
 		assertThat(response.getRedirectedUrl()).matches("https://example.com/login/oauth/authorize\\?"
 				+ "response_type=code&client_id=client-id&" + "scope=read:user&state=.{15,}&"
-				+ "redirect_uri=http://localhost/authorize/oauth2/code/registration-id");
+				+ "redirect_uri=http://localhost/authorize/oauth2/code/registration-id&code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256");
 		verify(this.requestCache).saveRequest(any(HttpServletRequest.class), any(HttpServletResponse.class));
 	}
 
@@ -278,7 +274,7 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 		assertThat(response.getRedirectedUrl()).matches("https://example.com/login/oauth/authorize\\?"
 				+ "response_type=code&client_id=client-id&" + "scope=read:user&state=.{15,}&"
 				+ "redirect_uri=http://localhost/login/oauth2/code/registration-id&"
-				+ "idp=https://other.provider.com");
+				+ "code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256&idp=https://other.provider.com");
 	}
 
 	// gh-4911, gh-5244
@@ -318,7 +314,7 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 		assertThat(response.getRedirectedUrl()).matches("https://example.com/login/oauth/authorize\\?"
 				+ "response_type=code&client_id=client-id&" + "scope=read:user&state=.{15,}&"
 				+ "redirect_uri=http://localhost/login/oauth2/code/registration-id&"
-				+ "login_hint=user@provider\\.com");
+				+ "code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256&login_hint=user@provider\\.com");
 	}
 
 	@Test
@@ -344,7 +340,7 @@ public class OAuth2AuthorizationRequestRedirectFilterTests {
 		assertThat(response.getContentAsString(StandardCharsets.UTF_8))
 			.matches("https://example.com/login/oauth/authorize\\?" + "response_type=code&client_id=client-id&"
 					+ "scope=read:user&state=.{15,}&"
-					+ "redirect_uri=http://localhost/login/oauth2/code/registration-id");
+					+ "redirect_uri=http://localhost/login/oauth2/code/registration-id&code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256");
 	}
 
 	// gh-11602

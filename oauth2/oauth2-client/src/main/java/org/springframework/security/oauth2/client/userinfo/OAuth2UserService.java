@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.oauth2.client.userinfo;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
@@ -46,6 +48,6 @@ public interface OAuth2UserService<R extends OAuth2UserRequest, U extends OAuth2
 	 * @throws OAuth2AuthenticationException if an error occurs while attempting to obtain
 	 * the user attributes from the UserInfo Endpoint
 	 */
-	U loadUser(R userRequest) throws OAuth2AuthenticationException;
+	@Nullable U loadUser(R userRequest) throws OAuth2AuthenticationException;
 
 }

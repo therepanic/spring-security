@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,10 +101,12 @@ public final class JwtAuthenticationProvider implements AuthenticationProvider {
 		}
 		catch (BadJwtException failed) {
 			this.logger.debug("Failed to authenticate since the JWT was invalid");
-			throw new InvalidBearerTokenException(failed.getMessage(), failed);
+			throw new InvalidBearerTokenException((failed.getMessage() != null) ? failed.getMessage() : "Invalid token",
+					failed);
 		}
 		catch (JwtException failed) {
-			throw new AuthenticationServiceException(failed.getMessage(), failed);
+			throw new AuthenticationServiceException(
+					(failed.getMessage() != null) ? failed.getMessage() : "Invalid token", failed);
 		}
 	}
 

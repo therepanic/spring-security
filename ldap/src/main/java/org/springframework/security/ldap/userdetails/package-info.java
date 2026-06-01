@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,4 +18,7 @@
  * LDAP-focused {@code UserDetails} implementations which map from a ubset of the data
  * contained in some of the standard LDAP types (such as {@code InetOrgPerson}).
  */
+@NullMarked
 package org.springframework.security.ldap.userdetails;
+
+import org.jspecify.annotations.NullMarked;

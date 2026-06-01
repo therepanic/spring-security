@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -19,6 +19,7 @@ package io.spring.gradle.convention;
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.PluginManager
+import org.gradle.api.tasks.bundling.Jar
 import org.springframework.gradle.classpath.CheckClasspathForProhibitedDependenciesPlugin;
 import org.springframework.gradle.maven.SpringMavenPlugin;
 
@@ -34,12 +35,18 @@ class SpringModulePlugin extends AbstractSpringJavaPlugin {
 		pluginManager.apply(SpringMavenPlugin.class);
 		pluginManager.apply(CheckClasspathForProhibitedDependenciesPlugin.class);
 		pluginManager.apply("io.spring.convention.jacoco");
+		pluginManager.apply("java-toolchain");
 
 		def deployArtifacts = project.task("deployArtifacts")
 		deployArtifacts.group = 'Deploy tasks'
 		deployArtifacts.description = "Deploys the artifacts to either Artifactory or Maven Central"
 		if (!Utils.isRelease(project)) {
 			deployArtifacts.dependsOn project.tasks.artifactoryPublish
+		}
+		project.tasks.withType(Jar) {
+			from(project.rootProject.files('LICENSE.txt')) {
+				into('META-INF')
+			}
 		}
 	}
 

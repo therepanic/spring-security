@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,18 @@ public class ServerOneTimeTokenAuthenticationConverterTests {
 	@Test
 	void convertWhenNoTokenParameterThenNull() {
 		MockServerHttpRequest.BaseBuilder<?> request = MockServerHttpRequest.get("/");
+
+		Authentication authentication = this.converter.convert(MockServerWebExchange.from(request)).block();
+
+		assertThat(authentication).isNull();
+	}
+
+	// gh-18973
+	@Test
+	void convertWhenNoTokenFormParameterThenNull() {
+		MockServerHttpRequest request = MockServerHttpRequest.post("/")
+			.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+			.body("username=Max");
 
 		Authentication authentication = this.converter.convert(MockServerWebExchange.from(request)).block();
 

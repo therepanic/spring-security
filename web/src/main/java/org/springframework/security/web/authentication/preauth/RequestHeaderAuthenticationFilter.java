@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.web.authentication.preauth;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -47,7 +48,7 @@ public class RequestHeaderAuthenticationFilter extends AbstractPreAuthenticatedP
 
 	private String principalRequestHeader = "SM_USER";
 
-	private String credentialsRequestHeader;
+	private @Nullable String credentialsRequestHeader;
 
 	private boolean exceptionIfHeaderMissing = true;
 
@@ -58,7 +59,7 @@ public class RequestHeaderAuthenticationFilter extends AbstractPreAuthenticatedP
 	 * {@code exceptionIfHeaderMissing} is set to {@code true}.
 	 */
 	@Override
-	protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
+	protected @Nullable Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
 		String principal = request.getHeader(this.principalRequestHeader);
 		if (principal == null && this.exceptionIfHeaderMissing) {
 			throw new PreAuthenticatedCredentialsNotFoundException(
@@ -73,7 +74,7 @@ public class RequestHeaderAuthenticationFilter extends AbstractPreAuthenticatedP
 	 * will be used.
 	 */
 	@Override
-	protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
+	protected @Nullable Object getPreAuthenticatedCredentials(HttpServletRequest request) {
 		if (this.credentialsRequestHeader != null) {
 			return request.getHeader(this.credentialsRequestHeader);
 		}

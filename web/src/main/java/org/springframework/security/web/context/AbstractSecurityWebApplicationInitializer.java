@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import jakarta.servlet.Filter;
 import jakarta.servlet.FilterRegistration.Dynamic;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.SessionTrackingMode;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.Conventions;
@@ -77,7 +78,7 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 
 	public static final String DEFAULT_FILTER_NAME = "springSecurityFilterChain";
 
-	private final Class<?>[] configurationClasses;
+	private final Class<?> @Nullable [] configurationClasses;
 
 	/**
 	 * Creates a new instance that assumes the Spring Security configuration is loaded by
@@ -212,7 +213,7 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 	 * @return the {@link DelegatingFilterProxy#getContextAttribute()} or null if the
 	 * parent {@link ApplicationContext} should be used
 	 */
-	private String getWebApplicationContextAttribute() {
+	private @Nullable String getWebApplicationContextAttribute() {
 		String dispatcherServletName = getDispatcherWebApplicationContextSuffix();
 		if (dispatcherServletName == null) {
 			return null;
@@ -255,7 +256,7 @@ public abstract class AbstractSecurityWebApplicationInitializer implements WebAp
 	 * {@link WebApplicationContext} or null (default) to use the parent
 	 * {@link ApplicationContext}.
 	 */
-	protected String getDispatcherWebApplicationContextSuffix() {
+	protected @Nullable String getDispatcherWebApplicationContextSuffix() {
 		return null;
 	}
 

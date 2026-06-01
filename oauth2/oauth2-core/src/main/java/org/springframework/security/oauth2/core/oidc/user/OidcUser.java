@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.oauth2.core.oidc.user;
 
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.Authentication;
@@ -65,10 +67,11 @@ public interface OidcUser extends OAuth2User, IdTokenClaimAccessor {
 	Map<String, Object> getClaims();
 
 	/**
-	 * Returns the {@link OidcUserInfo UserInfo} containing claims about the user.
-	 * @return the {@link OidcUserInfo} containing claims about the user.
+	 * Returns the {@link OidcUserInfo UserInfo} containing claims about the user, or
+	 * {@code null} if not present.
+	 * @return the {@link OidcUserInfo} containing claims about the user, or {@code null}
 	 */
-	OidcUserInfo getUserInfo();
+	@Nullable OidcUserInfo getUserInfo();
 
 	/**
 	 * Returns the {@link OidcIdToken ID Token} containing claims about the user.

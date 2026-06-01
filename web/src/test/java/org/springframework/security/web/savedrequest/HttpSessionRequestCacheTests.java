@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.security.web.PortResolverImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -78,8 +77,7 @@ public class HttpSessionRequestCacheTests {
 			@Override
 			public void saveRequest(HttpServletRequest request, HttpServletResponse response) {
 				request.getSession()
-					.setAttribute(SAVED_REQUEST,
-							new CustomSavedRequest(new DefaultSavedRequest(request, new PortResolverImpl())));
+					.setAttribute(SAVED_REQUEST, new CustomSavedRequest(new DefaultSavedRequest(request)));
 			}
 		};
 		cache.saveRequest(request, response);
@@ -166,6 +164,21 @@ public class HttpSessionRequestCacheTests {
 		verify(request, never()).getParameterValues(anyString());
 		verify(request, never()).getParameterNames();
 		verify(request, never()).getParameterMap();
+	}
+
+	// gh-16656
+	@Test
+	public void getMatchingRequestWhenMatchingRequestPathContainsPercentSignThenLookedUp() {
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setServletPath("/30 % off");
+		HttpSessionRequestCache cache = new HttpSessionRequestCache();
+		cache.saveRequest(request, new MockHttpServletResponse());
+		MockHttpServletRequest requestToMatch = new MockHttpServletRequest();
+		requestToMatch.setServletPath("/30 % off");
+		requestToMatch.setQueryString("continue");
+		requestToMatch.setSession(request.getSession());
+		HttpServletRequest matchingRequest = cache.getMatchingRequest(requestToMatch, new MockHttpServletResponse());
+		assertThat(matchingRequest).isNotNull();
 	}
 
 	private static final class CustomSavedRequest implements SavedRequest {

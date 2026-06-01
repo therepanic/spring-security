@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,6 +52,15 @@ public class SpringSecurityAuthenticationSourceTests {
 	public void principalAndCredentialsAreEmptyWithNoAuthentication() {
 		AuthenticationSource source = new SpringSecurityAuthenticationSource();
 		assertThat(source.getPrincipal()).isEqualTo("");
+		assertThat(source.getCredentials()).isEqualTo("");
+	}
+
+	@Test
+	public void credentialsAreEmptyWithNullCredentials() {
+		AuthenticationSource source = new SpringSecurityAuthenticationSource();
+		SecurityContextHolder.getContext()
+			.setAuthentication(
+					new AnonymousAuthenticationToken("key", "anonUser", AuthorityUtils.createAuthorityList("ignored")));
 		assertThat(source.getCredentials()).isEqualTo("");
 	}
 

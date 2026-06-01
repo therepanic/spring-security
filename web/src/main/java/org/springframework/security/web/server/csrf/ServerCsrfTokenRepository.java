@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.security.web.server.csrf;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.web.server.ServerWebExchange;
@@ -45,7 +46,7 @@ public interface ServerCsrfTokenRepository {
 	 * @param exchange the {@link ServerWebExchange} to use
 	 * @param token the {@link CsrfToken} to save or null to delete
 	 */
-	Mono<Void> saveToken(ServerWebExchange exchange, CsrfToken token);
+	Mono<Void> saveToken(ServerWebExchange exchange, @Nullable CsrfToken token);
 
 	/**
 	 * Loads the expected {@link CsrfToken} from the {@link ServerWebExchange}

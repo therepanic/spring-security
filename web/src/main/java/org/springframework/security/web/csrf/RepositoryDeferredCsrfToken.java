@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@
 
 package org.springframework.security.web.csrf;
 
+import java.util.Objects;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 /**
  * @author Rob Winch
@@ -32,7 +35,7 @@ final class RepositoryDeferredCsrfToken implements DeferredCsrfToken {
 
 	private final HttpServletResponse response;
 
-	private CsrfToken csrfToken;
+	private @Nullable CsrfToken csrfToken;
 
 	private boolean missingToken;
 
@@ -46,7 +49,7 @@ final class RepositoryDeferredCsrfToken implements DeferredCsrfToken {
 	@Override
 	public CsrfToken get() {
 		init();
-		return this.csrfToken;
+		return Objects.requireNonNull(this.csrfToken);
 	}
 
 	@Override

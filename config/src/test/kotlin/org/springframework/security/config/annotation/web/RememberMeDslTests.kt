@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -148,7 +148,7 @@ internal class RememberMeDslTests {
             cookie(expiredRememberMeCookie)
         }.andExpect {
             status { isFound() }
-            redirectedUrl("http://localhost/login")
+            redirectedUrl("/login")
         }
     }
 
@@ -224,7 +224,7 @@ internal class RememberMeDslTests {
             cookie(withoutKeyRememberMeCookie)
         }.andExpect {
             status { isFound() }
-            redirectedUrl("http://localhost/login")
+            redirectedUrl("/login")
         }
         val keyMvcResult = mockMvc.post("/login") {
             loginRememberMeRequest()

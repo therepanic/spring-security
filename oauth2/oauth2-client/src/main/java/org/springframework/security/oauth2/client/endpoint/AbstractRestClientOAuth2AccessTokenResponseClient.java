@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,10 +63,9 @@ public abstract class AbstractRestClientOAuth2AccessTokenResponseClient<T extend
 
 	// @formatter:off
 	private RestClient restClient = RestClient.builder()
-			.messageConverters((messageConverters) -> {
-				messageConverters.clear();
-				messageConverters.add(new FormHttpMessageConverter());
-				messageConverters.add(new OAuth2AccessTokenResponseHttpMessageConverter());
+			.configureMessageConverters((messageConverters) -> {
+				messageConverters.addCustomConverter(new FormHttpMessageConverter());
+				messageConverters.addCustomConverter(new OAuth2AccessTokenResponseHttpMessageConverter());
 			})
 			.defaultStatusHandler(new OAuth2ErrorResponseErrorHandler())
 			.build();

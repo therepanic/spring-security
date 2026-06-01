@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.security.config.http;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.security.AccessController;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
@@ -45,7 +44,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.apache.http.HttpStatus;
 import org.assertj.core.api.iterable.Extractor;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.stubbing.Answer;
@@ -55,6 +53,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.parsing.BeanDefinitionParsingException;
+import org.springframework.lang.NonNull;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockHttpSession;
@@ -612,7 +611,7 @@ public class MiscHttpConfigTests {
 		proxy.doFilter(request, new EncodeUrlDenyingHttpServletResponseWrapper(response), (req, resp) -> {
 		});
 		assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_MOVED_TEMPORARILY);
-		assertThat(response.getRedirectedUrl()).isEqualTo("http://localhost/login");
+		assertThat(response.getRedirectedUrl()).isEqualTo("/login");
 	}
 
 	@Test
@@ -841,7 +840,7 @@ public class MiscHttpConfigTests {
 		this.spring.configLocations(xml("PortsMappedRequiresHttps")).autowire();
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(get("https://localhost:9080/protected"))
-				.andExpect(redirectedUrl("https://localhost:9443/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession(false);
@@ -908,17 +907,17 @@ public class MiscHttpConfigTests {
 		return proxy.getFilters(url);
 	}
 
-	@NotNull
+	@NonNull
 	private static RequestPostProcessor userCredentials() {
 		return httpBasic("user", "password");
 	}
 
-	@NotNull
+	@NonNull
 	private static RequestPostProcessor adminCredentials() {
 		return httpBasic("admin", "password");
 	}
 
-	@NotNull
+	@NonNull
 	private static RequestPostProcessor postCredentials() {
 		return httpBasic("poster", "password");
 	}
@@ -989,7 +988,7 @@ public class MiscHttpConfigTests {
 
 		@GetMapping("/username")
 		String username() {
-			Subject subject = Subject.getSubject(AccessController.getContext());
+			Subject subject = Subject.current();
 			return subject.getPrincipals().iterator().next().getName();
 		}
 

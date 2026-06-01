@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,10 @@ import java.util.function.Function;
 import org.opensaml.core.Version;
 
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.saml2.provider.service.metadata.OpenSaml4MetadataResolver;
 import org.springframework.security.saml2.provider.service.metadata.OpenSaml5MetadataResolver;
 import org.springframework.security.saml2.provider.service.metadata.Saml2MetadataResponseResolver;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
@@ -43,7 +43,8 @@ import org.springframework.util.Assert;
  *
  * <p>
  * Defaults are provided for all configuration options with the only required
- * configuration being a {@link Saml2LoginConfigurer#relyingPartyRegistrationRepository}.
+ * configuration being a
+ * {@link Saml2LoginConfigurer#relyingPartyRegistrationRepository(HttpSecurityBuilder)}.
  * Alternatively, a {@link RelyingPartyRegistrationRepository} {@code @Bean} may be
  * registered instead.
  *
@@ -68,7 +69,7 @@ import org.springframework.util.Assert;
  * </ul>
  *
  * @since 6.1
- * @see HttpSecurity#saml2Metadata()
+ * @see HttpSecurity#saml2Metadata(Customizer)
  * @see Saml2MetadataFilter
  * @see RelyingPartyRegistrationRepository
  */
@@ -96,7 +97,7 @@ public class Saml2MetadataConfigurer<H extends HttpSecurityBuilder<H>>
 	 * If there is no {@code registrationId} and your
 	 * {@link RelyingPartyRegistrationRepository} is {code Iterable}, the metadata
 	 * endpoint will try and show all relying parties' metadata in a single
-	 * {@code <md:EntitiesDecriptor} element.
+	 * {@code <md:EntitiesDescriptor} element.
 	 *
 	 * <p>
 	 * If you need a more sophisticated lookup strategy than these, use
@@ -113,10 +114,8 @@ public class Saml2MetadataConfigurer<H extends HttpSecurityBuilder<H>>
 				metadata.setRequestMatcher(getRequestMatcherBuilder().matcher(metadataUrl));
 				return metadata;
 			}
-			RequestMatcherMetadataResponseResolver metadata = new RequestMatcherMetadataResponseResolver(registrations,
-					new OpenSaml4MetadataResolver());
-			metadata.setRequestMatcher(getRequestMatcherBuilder().matcher(metadataUrl));
-			return metadata;
+			throw new IllegalArgumentException(
+					"Spring Security does not support OpenSAML " + Version.getVersion() + ". Please use OpenSAML 5");
 		};
 		return this;
 	}
@@ -138,7 +137,7 @@ public class Saml2MetadataConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	@Override
-	public void configure(H http) throws Exception {
+	public void configure(H http) {
 		Saml2MetadataResponseResolver metadataResponseResolver = createMetadataResponseResolver(http);
 		http.addFilterBefore(new Saml2MetadataFilter(metadataResponseResolver), BasicAuthenticationFilter.class);
 	}
@@ -156,7 +155,8 @@ public class Saml2MetadataConfigurer<H extends HttpSecurityBuilder<H>>
 		if (USE_OPENSAML_5) {
 			return new RequestMatcherMetadataResponseResolver(registrations, new OpenSaml5MetadataResolver());
 		}
-		return new RequestMatcherMetadataResponseResolver(registrations, new OpenSaml4MetadataResolver());
+		throw new IllegalArgumentException(
+				"Spring Security does not support OpenSAML " + Version.getVersion() + ". Please use OpenSAML 5");
 	}
 
 	private RelyingPartyRegistrationRepository getRelyingPartyRegistrationRepository(H http) {

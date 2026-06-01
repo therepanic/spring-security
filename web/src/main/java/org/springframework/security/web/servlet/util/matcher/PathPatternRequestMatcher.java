@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package org.springframework.security.web.servlet.util.matcher;
 import java.util.Objects;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpMethod;
 import org.springframework.http.server.PathContainer;
 import org.springframework.http.server.RequestPath;
-import org.springframework.lang.Nullable;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
@@ -49,13 +49,14 @@ import org.springframework.web.util.pattern.PathPatternParser;
  * </p>
  *
  * @author Josh Cummings
+ * @author Andrey Litvitski
  * @since 6.5
  */
 public final class PathPatternRequestMatcher implements RequestMatcher {
 
 	private final PathPattern pattern;
 
-	private RequestMatcher method = AnyRequestMatcher.INSTANCE;
+	private final RequestMatcher method;
 
 	/**
 	 * Creates a {@link PathPatternRequestMatcher} that uses the provided {@code pattern}.
@@ -64,8 +65,9 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 	 * </p>
 	 * @param pattern the pattern used to match
 	 */
-	private PathPatternRequestMatcher(PathPattern pattern) {
+	private PathPatternRequestMatcher(PathPattern pattern, RequestMatcher method) {
 		this.pattern = pattern;
+		this.method = method;
 	}
 
 	/**
@@ -142,10 +144,6 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 		return (info != null) ? MatchResult.match(info.getUriVariables()) : MatchResult.notMatch();
 	}
 
-	void setMethod(RequestMatcher method) {
-		this.method = method;
-	}
-
 	private PathContainer getPathContainer(HttpServletRequest request) {
 		RequestPath path;
 		if (ServletRequestPathUtils.hasParsedRequestPath(request)) {
@@ -163,7 +161,7 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 	 * {@inheritDoc}
 	 */
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (!(o instanceof PathPatternRequestMatcher that)) {
 			return false;
 		}
@@ -237,14 +235,15 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 		 *
 		 * <p>
 		 * Prefixes should be of the form {@code /my/prefix}, starting with a slash, not
-		 * ending in a slash, and not containing and wildcards
+		 * ending in a slash, and not containing and wildcards The special value
+		 * {@code "/"} may be used to indicate the root context.
 		 * @param basePath the path prefix
 		 * @return the {@link Builder} for more configuration
 		 */
 		public Builder basePath(String basePath) {
 			Assert.notNull(basePath, "basePath cannot be null");
 			Assert.isTrue(basePath.startsWith("/"), "basePath must start with '/'");
-			Assert.isTrue(!basePath.endsWith("/"), "basePath must not end with a slash");
+			Assert.isTrue("/".equals(basePath) || !basePath.endsWith("/"), "basePath must not end with a slash");
 			Assert.isTrue(!basePath.contains("*"), "basePath must not contain a star");
 			return new Builder(this.parser, basePath);
 		}
@@ -269,9 +268,9 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 		 * The following are valid patterns and their meaning
 		 * <ul>
 		 * <li>{@code /path} - match exactly and only `/path`</li>
-		 * <li>{@code /path/**} - match `/path` and any of its descendents</li>
+		 * <li>{@code /path/**} - match `/path` and any of its descendants</li>
 		 * <li>{@code /path/{value}/**} - match `/path/subdirectory` and any of its
-		 * descendents, capturing the value of the subdirectory in
+		 * descendants, capturing the value of the subdirectory in
 		 * {@link RequestAuthorizationContext#getVariables()}</li>
 		 * </ul>
 		 *
@@ -304,9 +303,9 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 		 * The following are valid patterns and their meaning
 		 * <ul>
 		 * <li>{@code /path} - match exactly and only `/path`</li>
-		 * <li>{@code /path/**} - match `/path` and any of its descendents</li>
+		 * <li>{@code /path/**} - match `/path` and any of its descendants</li>
 		 * <li>{@code /path/{value}/**} - match `/path/subdirectory` and any of its
-		 * descendents, capturing the value of the subdirectory in
+		 * descendants, capturing the value of the subdirectory in
 		 * {@link RequestAuthorizationContext#getVariables()}</li>
 		 * </ul>
 		 *
@@ -319,12 +318,10 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 		public PathPatternRequestMatcher matcher(@Nullable HttpMethod method, String path) {
 			Assert.notNull(path, "pattern cannot be null");
 			Assert.isTrue(path.startsWith("/"), "pattern must start with a /");
-			PathPattern pathPattern = this.parser.parse(this.basePath + path);
-			PathPatternRequestMatcher requestMatcher = new PathPatternRequestMatcher(pathPattern);
-			if (method != null) {
-				requestMatcher.setMethod(new HttpMethodRequestMatcher(method));
-			}
-			return requestMatcher;
+			String prefix = ("/".equals(this.basePath)) ? "" : this.basePath;
+			PathPattern pathPattern = this.parser.parse(prefix + path);
+			return new PathPatternRequestMatcher(pathPattern,
+					(method != null) ? new HttpMethodRequestMatcher(method) : AnyRequestMatcher.INSTANCE);
 		}
 
 	}
@@ -340,6 +337,19 @@ public final class PathPatternRequestMatcher implements RequestMatcher {
 		@Override
 		public boolean matches(HttpServletRequest request) {
 			return this.method.name().equals(request.getMethod());
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof HttpMethodRequestMatcher that)) {
+				return false;
+			}
+			return Objects.equals(this.method, that.method);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.method);
 		}
 
 		@Override

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
+import org.springframework.security.config.web.PathPatternRequestMatcherBuilderFactoryBean;
 import org.springframework.security.core.userdetails.PasswordEncodedUser;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
@@ -89,6 +90,19 @@ public class OneTimeTokenLoginConfigurerTests {
 	@Test
 	void oneTimeTokenWhenCorrectTokenThenCanAuthenticate() throws Exception {
 		this.spring.register(OneTimeTokenDefaultConfig.class).autowire();
+		this.mvc.perform(post("/ott/generate").param("username", "user").with(csrf()))
+			.andExpectAll(status().isFound(), redirectedUrl("/login/ott"));
+
+		String token = getLastToken().getTokenValue();
+
+		this.mvc.perform(post("/login/ott").param("token", token).with(csrf()))
+			.andExpectAll(status().isFound(), redirectedUrl("/"), authenticated());
+	}
+
+	// gh-19128
+	@Test
+	void oneTimeTokenWhenBuilderBeanWithBasePathThenGenerateAndLoginUrlsIgnoreBasePath() throws Exception {
+		this.spring.register(OneTimeTokenBuilderBeanConfig.class).autowire();
 		this.mvc.perform(post("/ott/generate").param("username", "user").with(csrf()))
 			.andExpectAll(status().isFound(), redirectedUrl("/login/ott"));
 
@@ -174,7 +188,7 @@ public class OneTimeTokenLoginConfigurerTests {
 
 						        <p>
 						          <label for="ott-username" class="screenreader">Username</label>
-						          <input type="text" id="ott-username" name="username" placeholder="Username" required>
+						          <input type="text" id="ott-username" name="username" placeholder="Username" required autofocus>
 						        </p>
 						<input name="_csrf" type="hidden" value="%s" />
 						        <button class="primary" type="submit" form="ott-form">Send Token</button>
@@ -191,9 +205,7 @@ public class OneTimeTokenLoginConfigurerTests {
 	@Test
 	void oneTimeTokenWhenLoginPageConfiguredThenRedirects() throws Exception {
 		this.spring.register(OneTimeTokenLoginPageConfig.class).autowire();
-		this.mvc.perform(get("/login"))
-			.andExpect(status().isFound())
-			.andExpect(redirectedUrl("http://localhost/custom-login"));
+		this.mvc.perform(get("/login")).andExpect(status().isFound()).andExpect(redirectedUrl("/custom-login"));
 	}
 
 	@Test
@@ -275,6 +287,41 @@ public class OneTimeTokenLoginConfigurerTests {
 	@EnableWebSecurity
 	@Import(UserDetailsServiceConfig.class)
 	static class OneTimeTokenDefaultConfig {
+
+		@Bean
+		SecurityFilterChain securityFilterChain(HttpSecurity http,
+				OneTimeTokenGenerationSuccessHandler ottSuccessHandler) throws Exception {
+			// @formatter:off
+			http
+					.authorizeHttpRequests((authorize) -> authorize
+							.anyRequest().authenticated()
+					)
+					.oneTimeTokenLogin((ott) -> ott
+							.tokenGenerationSuccessHandler(ottSuccessHandler)
+					);
+			// @formatter:on
+			return http.build();
+		}
+
+		@Bean
+		TestOneTimeTokenGenerationSuccessHandler ottSuccessHandler() {
+			return new TestOneTimeTokenGenerationSuccessHandler();
+		}
+
+	}
+
+	// gh-19128
+	@Configuration(proxyBeanMethods = false)
+	@EnableWebSecurity
+	@Import(UserDetailsServiceConfig.class)
+	static class OneTimeTokenBuilderBeanConfig {
+
+		@Bean
+		PathPatternRequestMatcherBuilderFactoryBean requestMatcherBuilder() {
+			PathPatternRequestMatcherBuilderFactoryBean bean = new PathPatternRequestMatcherBuilderFactoryBean();
+			bean.setBasePath("/spring");
+			return bean;
+		}
 
 		@Bean
 		SecurityFilterChain securityFilterChain(HttpSecurity http,

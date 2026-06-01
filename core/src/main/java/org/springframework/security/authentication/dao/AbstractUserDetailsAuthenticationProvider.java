@@ -16,6 +16,9 @@
 
 package org.springframework.security.authentication.dao;
 
+import java.util.Collection;
+import java.util.LinkedHashSet;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -33,7 +36,9 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityMessageSource;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper;
 import org.springframework.security.core.userdetails.UserCache;
@@ -92,7 +97,11 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 
 	private UserDetailsChecker postAuthenticationChecks = new DefaultPostAuthenticationChecks();
 
+	private boolean alwaysPerformAdditionalChecksOnUser = true;
+
 	private GrantedAuthoritiesMapper authoritiesMapper = new NullAuthoritiesMapper();
+
+	private static final String AUTHORITY = FactorGrantedAuthority.PASSWORD_AUTHORITY;
 
 	/**
 	 * Allows subclasses to perform any additional checks of a returned (or cached)
@@ -114,7 +123,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			UsernamePasswordAuthenticationToken authentication) throws AuthenticationException;
 
 	@Override
-	public final void afterPropertiesSet() throws Exception {
+	public final void afterPropertiesSet() {
 		Assert.notNull(this.userCache, "A user cache must be set");
 		Assert.notNull(this.messages, "A message source must be set");
 		Assert.notNull(this.preAuthenticationChecks, "A pre authentication checks must be set");
@@ -147,8 +156,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			Assert.notNull(user, "retrieveUser returned null - a violation of the interface contract");
 		}
 		try {
-			this.preAuthenticationChecks.check(user);
-			additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);
+			performPreCheck(user, (UsernamePasswordAuthenticationToken) authentication);
 		}
 		catch (AuthenticationException ex) {
 			if (!cacheWasUsed) {
@@ -158,8 +166,7 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			// we're using latest data (i.e. not from the cache)
 			cacheWasUsed = false;
 			user = retrieveUser(username, (UsernamePasswordAuthenticationToken) authentication);
-			this.preAuthenticationChecks.check(user);
-			additionalAuthenticationChecks(user, (UsernamePasswordAuthenticationToken) authentication);
+			performPreCheck(user, (UsernamePasswordAuthenticationToken) authentication);
 		}
 		this.postAuthenticationChecks.check(user);
 		if (!cacheWasUsed) {
@@ -170,6 +177,25 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 			principalToReturn = user.getUsername();
 		}
 		return createSuccessAuthentication(principalToReturn, authentication, user);
+	}
+
+	private void performPreCheck(UserDetails user, UsernamePasswordAuthenticationToken authentication) {
+		try {
+			this.preAuthenticationChecks.check(user);
+		}
+		catch (AuthenticationException ex) {
+			if (!this.alwaysPerformAdditionalChecksOnUser) {
+				throw ex;
+			}
+			try {
+				additionalAuthenticationChecks(user, authentication);
+			}
+			catch (AuthenticationException ignored) {
+				// preserve the original failed check
+			}
+			throw ex;
+		}
+		additionalAuthenticationChecks(user, authentication);
 	}
 
 	private String determineUsername(Authentication authentication) {
@@ -197,14 +223,17 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 		// so subsequent attempts are successful even with encoded passwords.
 		// Also ensure we return the original getDetails(), so that future
 		// authentication events after cache expiry contain the details
+		Collection<GrantedAuthority> authorities = new LinkedHashSet<>(
+				this.authoritiesMapper.mapAuthorities(user.getAuthorities()));
+		authorities.add(FactorGrantedAuthority.fromAuthority(AUTHORITY));
 		UsernamePasswordAuthenticationToken result = UsernamePasswordAuthenticationToken.authenticated(principal,
-				authentication.getCredentials(), this.authoritiesMapper.mapAuthorities(user.getAuthorities()));
+				authentication.getCredentials(), authorities);
 		result.setDetails(authentication.getDetails());
 		this.logger.debug("Authenticated user");
 		return result;
 	}
 
-	protected void doAfterPropertiesSet() throws Exception {
+	protected void doAfterPropertiesSet() {
 	}
 
 	public UserCache getUserCache() {
@@ -312,6 +341,22 @@ public abstract class AbstractUserDetailsAuthenticationProvider
 
 	public void setPostAuthenticationChecks(UserDetailsChecker postAuthenticationChecks) {
 		this.postAuthenticationChecks = postAuthenticationChecks;
+	}
+
+	/**
+	 * Set whether to always perform the additional checks on the user, even if the
+	 * pre-authentication checks fail. This is useful to ensure that regardless of the
+	 * state of the user account, authentication takes the same amount of time to
+	 * complete.
+	 *
+	 * <p>
+	 * For applications that rely on the additional checks running only once should set
+	 * this value to {@code false}
+	 * @param alwaysPerformAdditionalChecksOnUser
+	 * @since 5.7.23
+	 */
+	public void setAlwaysPerformAdditionalChecksOnUser(boolean alwaysPerformAdditionalChecksOnUser) {
+		this.alwaysPerformAdditionalChecksOnUser = alwaysPerformAdditionalChecksOnUser;
 	}
 
 	public void setAuthoritiesMapper(GrantedAuthoritiesMapper authoritiesMapper) {

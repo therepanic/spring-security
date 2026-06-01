@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class UserServiceBeanDefinitionParserTests {
 		System.setProperty("principal.pass", "joespassword");
 		System.setProperty("principal.authorities", "ROLE_A,ROLE_B");
 		// @formatter:off
-		setContext("<b:bean class='org.springframework.beans.factory.config.PropertyPlaceholderConfigurer'/>"
+		setContext("<b:bean class='org.springframework.context.support.PropertySourcesPlaceholderConfigurer'/>"
 				+ "<user-service id='service'>"
 				+ "    <user name='${principal.name}' password='${principal.pass}' authorities='${principal.authorities}'/>"
 				+ "</user-service>");

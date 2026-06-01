@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,23 @@ import org.springframework.util.Assert;
 /**
  * A {@link Jwt} to {@link GrantedAuthority} {@link Converter} that is a composite of
  * converters.
+ *
+ * <p>
+ * This is handy when needing to read authorities from multiple locations in a JWT; each
+ * underlying converter is called in series and the results are aggregated into a single
+ * collection of authorities.
+ *
+ * <p>
+ * For example, you might have a claim called "scope" and another called "roles". With
+ * {@link DelegatingJwtGrantedAuthoritiesConverter}, you can do:
+ *
+ * <code>
+ *   JwtGrantedAuthoritiesConverter scopes = new JwtGrantedAuthoritiesConverter();
+ *   JwtGrantedAuthoritiesConverter roles = new JwtGrantedAUthoritiesConverter();
+ *   roles.setAuthoritiesClaimName("roles");
+ *   roles.setAuthorityPrefix("ROLE_");
+ *   return new DelegatingJwtGrantedAuthoritiesConverter(scopes, roles);
+ * </code>
  *
  * @author Laszlo Stahorszki
  * @author Josh Cummings

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.security.oauth2.client.web.client;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequest;
@@ -40,7 +42,7 @@ public class RequestAttributePrincipalResolver implements OAuth2ClientHttpReques
 		.concat(".principal");
 
 	@Override
-	public Authentication resolve(HttpRequest request) {
+	public @Nullable Authentication resolve(HttpRequest request) {
 		return (Authentication) request.getAttributes().get(PRINCIPAL_ATTR_NAME);
 	}
 
@@ -79,7 +81,7 @@ public class RequestAttributePrincipalResolver implements OAuth2ClientHttpReques
 			}
 
 			@Override
-			public Object getCredentials() {
+			public @Nullable Object getCredentials() {
 				return null;
 			}
 		};

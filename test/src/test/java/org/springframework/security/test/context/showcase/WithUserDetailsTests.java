@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -51,8 +52,8 @@ public class WithUserDetailsTests {
 
 	@Test
 	public void getMessageUnauthenticated() {
-		assertThatExceptionOfType(AuthenticationCredentialsNotFoundException.class)
-			.isThrownBy(() -> this.messageService.getMessage());
+		assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> this.messageService.getMessage())
+			.withRootCauseInstanceOf(AuthenticationCredentialsNotFoundException.class);
 	}
 
 	@Test
@@ -84,7 +85,8 @@ public class WithUserDetailsTests {
 	}
 
 	@Configuration
-	@EnableGlobalMethodSecurity(prePostEnabled = true)
+	@EnableMethodSecurity
+	@EnableWebSecurity
 	@ComponentScan(basePackageClasses = HelloMessageService.class)
 	static class Config {
 

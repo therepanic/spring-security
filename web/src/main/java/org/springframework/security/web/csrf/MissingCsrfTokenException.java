@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.security.web.csrf;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Thrown when no expected {@link CsrfToken} is found but is required.
  *
@@ -25,7 +27,7 @@ package org.springframework.security.web.csrf;
 @SuppressWarnings("serial")
 public class MissingCsrfTokenException extends CsrfException {
 
-	public MissingCsrfTokenException(String actualToken) {
+	public MissingCsrfTokenException(@Nullable String actualToken) {
 		super("Could not verify the provided CSRF token because no token was found to compare.");
 	}
 

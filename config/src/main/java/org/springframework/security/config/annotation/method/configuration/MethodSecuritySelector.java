@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,7 +42,8 @@ final class MethodSecuritySelector implements ImportSelector {
 		.isPresent("org.springframework.security.data.aot.hint.AuthorizeReturnObjectDataHintsRegistrar", null);
 
 	private static final boolean isWebPresent = ClassUtils
-		.isPresent("org.springframework.web.servlet.DispatcherServlet", null);
+		.isPresent("org.springframework.web.servlet.DispatcherServlet", null)
+			&& ClassUtils.isPresent("org.springframework.security.web.util.ThrowableAnalyzer", null);
 
 	private static final boolean isObservabilityPresent = ClassUtils
 		.isPresent("io.micrometer.observation.ObservationRegistry", null);

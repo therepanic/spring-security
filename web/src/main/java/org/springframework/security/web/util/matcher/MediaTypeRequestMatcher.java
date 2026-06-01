@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
@@ -249,6 +251,26 @@ public final class MediaTypeRequestMatcher implements RequestMatcher {
 	 */
 	public void setIgnoredMediaTypes(Set<MediaType> ignoredMediaTypes) {
 		this.ignoredMediaTypes = ignoredMediaTypes;
+	}
+
+	@Override
+	public boolean equals(@Nullable Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (!(obj instanceof MediaTypeRequestMatcher that)) {
+			return false;
+		}
+		return Objects.equals(this.contentNegotiationStrategy.getClass(), that.contentNegotiationStrategy.getClass())
+				&& Objects.equals(this.useEquals, that.useEquals)
+				&& Objects.equals(this.matchingMediaTypes, that.matchingMediaTypes)
+				&& Objects.equals(this.ignoredMediaTypes, that.ignoredMediaTypes);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.contentNegotiationStrategy.getClass(), this.useEquals, this.matchingMediaTypes,
+				this.ignoredMediaTypes);
 	}
 
 	@Override

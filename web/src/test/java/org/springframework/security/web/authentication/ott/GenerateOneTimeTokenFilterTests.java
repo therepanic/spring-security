@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,6 +111,24 @@ public class GenerateOneTimeTokenFilterTests {
 		assertThatIllegalArgumentException()
 				.isThrownBy(() -> filter.setRequestMatcher(null));
 		// @formatter:on
+	}
+
+	@Test
+	void filterWhenUsernameFormParamIsEmptyButRequestResolverCanResolveThenSuccess()
+			throws ServletException, IOException {
+		GenerateOneTimeTokenRequestResolver requestResolver = mock();
+		given(this.oneTimeTokenService.generate(ArgumentMatchers.any(GenerateOneTimeTokenRequest.class)))
+			.willReturn((new DefaultOneTimeToken(TOKEN, USERNAME, Instant.now())));
+		given(requestResolver.resolve(this.request)).willReturn(new GenerateOneTimeTokenRequest(USERNAME));
+
+		GenerateOneTimeTokenFilter filter = new GenerateOneTimeTokenFilter(this.oneTimeTokenService,
+				this.successHandler);
+		filter.setRequestResolver(requestResolver);
+
+		filter.doFilter(this.request, this.response, this.filterChain);
+
+		verify(this.oneTimeTokenService).generate(ArgumentMatchers.any(GenerateOneTimeTokenRequest.class));
+		assertThat(this.response.getRedirectedUrl()).isEqualTo("/login/ott");
 	}
 
 }

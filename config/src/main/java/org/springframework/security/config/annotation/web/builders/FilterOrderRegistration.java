@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,7 @@ import java.util.Map;
 import jakarta.servlet.Filter;
 
 import org.springframework.security.web.access.ExceptionTranslationFilter;
-import org.springframework.security.web.access.channel.ChannelProcessingFilter;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
-import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -78,7 +76,7 @@ final class FilterOrderRegistration {
 		Step order = new Step(INITIAL_ORDER, ORDER_STEP);
 		put(DisableEncodeUrlFilter.class, order.next());
 		put(ForceEagerSessionCreationFilter.class, order.next());
-		put(ChannelProcessingFilter.class, order.next());
+		this.filterToOrder.put("org.springframework.security.web.access.channel.ChannelProcessingFilter", order.next());
 		put(HttpsRedirectFilter.class, order.next());
 		order.next(); // gh-8105
 		put(WebAsyncManagerIntegrationFilter.class, order.next());
@@ -126,7 +124,8 @@ final class FilterOrderRegistration {
 				order.next());
 		put(SessionManagementFilter.class, order.next());
 		put(ExceptionTranslationFilter.class, order.next());
-		put(FilterSecurityInterceptor.class, order.next());
+		this.filterToOrder.put("org.springframework.security.web.access.intercept.FilterSecurityInterceptor",
+				order.next());
 		put(AuthorizationFilter.class, order.next());
 		put(SwitchUserFilter.class, order.next());
 	}
@@ -134,7 +133,7 @@ final class FilterOrderRegistration {
 	/**
 	 * Register a {@link Filter} with its specific position. If the {@link Filter} was
 	 * already registered before, the position previously defined is not going to be
-	 * overriden
+	 * overridden
 	 * @param filter the {@link Filter} to register
 	 * @param position the position to associate with the {@link Filter}
 	 */

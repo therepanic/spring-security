@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,6 +120,7 @@ public class OAuth2LoginReactiveAuthenticationManager implements ReactiveAuthent
 
 	private Mono<OAuth2LoginAuthenticationToken> onSuccess(OAuth2AuthorizationCodeAuthenticationToken authentication) {
 		OAuth2AccessToken accessToken = authentication.getAccessToken();
+		Assert.notNull(accessToken, "accessToken cannot be null");
 		Map<String, Object> additionalParameters = authentication.getAdditionalParameters();
 		OAuth2UserRequest userRequest = new OAuth2UserRequest(authentication.getClientRegistration(), accessToken,
 				additionalParameters);

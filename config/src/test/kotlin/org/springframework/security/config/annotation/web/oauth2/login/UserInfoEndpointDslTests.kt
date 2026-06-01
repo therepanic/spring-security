@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,7 +77,7 @@ class UserInfoEndpointDslTests {
                 .state("test")
                 .clientId("clientId")
                 .authorizationUri("https://test")
-                .redirectUri("http://localhost/login/oauth2/code/google")
+                .redirectUri("/login/oauth2/code/google")
                 .attributes(attributes)
                 .build()
         every {

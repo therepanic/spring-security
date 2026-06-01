@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -136,6 +136,52 @@ public class PathPatternRequestMatcherTests {
 			.isThrownBy(() -> PathPatternRequestMatcher.withDefaults().basePath("/path/*"));
 		assertThatExceptionOfType(IllegalArgumentException.class)
 			.isThrownBy(() -> PathPatternRequestMatcher.withDefaults().basePath("/path/"));
+	}
+
+	@Test
+	void matcherWhenBasePathIsRootThenNoDoubleSlash() {
+		PathPatternRequestMatcher.Builder builder = PathPatternRequestMatcher.withDefaults().basePath("/");
+		RequestMatcher matcher = builder.matcher(HttpMethod.GET, "/path");
+		MockHttpServletRequest mock = get("/path").servletPath("/path").buildRequest(null);
+		assertThat(matcher.matches(mock)).isTrue();
+	}
+
+	@Test
+	void matcherWhenRequestMethodIsNullThenNoNullPointerException() {
+		RequestMatcher matcher = pathPattern(HttpMethod.GET, "/");
+		MockHttpServletRequest mock = new MockHttpServletRequest(null, "/");
+		ServletRequestPathUtils.parseAndCache(mock);
+		assertThat(matcher.matches(mock)).isFalse();
+	}
+
+	@Test
+	void matcherWhenRequestPathNotParsedThenDoesNotLeaveParsedRequestPath() {
+		RequestMatcher matcher = pathPattern("/uri");
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/uri");
+		assertThat(ServletRequestPathUtils.hasParsedRequestPath(request)).isFalse();
+		assertThat(matcher.matches(request)).isTrue();
+		assertThat(ServletRequestPathUtils.hasParsedRequestPath(request)).isFalse();
+	}
+
+	@Test
+	void matcherWhenRequestPathAlreadyParsedThenLeavesParsedRequestPath() {
+		RequestMatcher matcher = pathPattern("/uri");
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/uri");
+		ServletRequestPathUtils.parseAndCache(request);
+		assertThat(ServletRequestPathUtils.hasParsedRequestPath(request)).isTrue();
+		assertThat(matcher.matches(request)).isTrue();
+		assertThat(ServletRequestPathUtils.hasParsedRequestPath(request)).isTrue();
+	}
+
+	// gh-18911
+	@Test
+	void testEqualsWithSameAndDifferentHttpMethod() {
+		PathPatternRequestMatcher.Builder builder = PathPatternRequestMatcher.withDefaults();
+		PathPatternRequestMatcher matcher1 = builder.matcher(HttpMethod.GET, "/foo");
+		PathPatternRequestMatcher matcher2 = builder.matcher(HttpMethod.GET, "/foo");
+		PathPatternRequestMatcher matcher3 = builder.matcher(HttpMethod.POST, "/foo");
+		assertThat(matcher1).isEqualTo(matcher2);
+		assertThat(matcher1).isNotEqualTo(matcher3);
 	}
 
 	MockHttpServletRequest request(String uri) {

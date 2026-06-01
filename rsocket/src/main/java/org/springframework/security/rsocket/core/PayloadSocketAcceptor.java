@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import io.rsocket.Payload;
 import io.rsocket.RSocket;
 import io.rsocket.SocketAcceptor;
 import io.rsocket.metadata.WellKnownMimeType;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 
-import org.springframework.lang.Nullable;
 import org.springframework.security.rsocket.api.PayloadExchangeType;
 import org.springframework.security.rsocket.api.PayloadInterceptor;
 import org.springframework.util.Assert;
@@ -44,8 +44,7 @@ class PayloadSocketAcceptor implements SocketAcceptor {
 
 	private final List<PayloadInterceptor> interceptors;
 
-	@Nullable
-	private MimeType defaultDataMimeType;
+	private @Nullable MimeType defaultDataMimeType;
 
 	private MimeType defaultMetadataMimeType = MimeTypeUtils
 		.parseMimeType(WellKnownMimeType.MESSAGE_RSOCKET_COMPOSITE_METADATA.getString());
@@ -85,7 +84,7 @@ class PayloadSocketAcceptor implements SocketAcceptor {
 		});
 	}
 
-	private MimeType parseMimeType(String str, MimeType defaultMimeType) {
+	private @Nullable MimeType parseMimeType(String str, @Nullable MimeType defaultMimeType) {
 		return StringUtils.hasText(str) ? MimeTypeUtils.parseMimeType(str) : defaultMimeType;
 	}
 

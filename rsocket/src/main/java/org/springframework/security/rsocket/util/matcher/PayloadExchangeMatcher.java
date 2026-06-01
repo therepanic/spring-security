@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.security.rsocket.api.PayloadExchange;
@@ -46,9 +47,9 @@ public interface PayloadExchangeMatcher {
 
 		private final boolean match;
 
-		private final Map<String, Object> variables;
+		private final @Nullable Map<String, Object> variables;
 
-		private MatchResult(boolean match, Map<String, Object> variables) {
+		private MatchResult(boolean match, @Nullable Map<String, Object> variables) {
 			this.match = match;
 			this.variables = variables;
 		}
@@ -61,7 +62,7 @@ public interface PayloadExchangeMatcher {
 		 * Gets potential variables and their values
 		 * @return
 		 */
-		public Map<String, Object> getVariables() {
+		public @Nullable Map<String, Object> getVariables() {
 			return this.variables;
 		}
 

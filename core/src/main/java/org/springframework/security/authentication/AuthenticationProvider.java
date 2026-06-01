@@ -16,6 +16,8 @@
 
 package org.springframework.security.authentication;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 
@@ -39,7 +41,7 @@ public interface AuthenticationProvider {
 	 * <code>Authentication</code> class will be tried.
 	 * @throws AuthenticationException if authentication fails.
 	 */
-	Authentication authenticate(Authentication authentication) throws AuthenticationException;
+	@Nullable Authentication authenticate(Authentication authentication) throws AuthenticationException;
 
 	/**
 	 * Returns <code>true</code> if this <Code>AuthenticationProvider</code> supports the
@@ -54,7 +56,7 @@ public interface AuthenticationProvider {
 	 * </p>
 	 * <p>
 	 * Selection of an <code>AuthenticationProvider</code> capable of performing
-	 * authentication is conducted at runtime the <code>ProviderManager</code>.
+	 * authentication is conducted at runtime by the <code>ProviderManager</code>.
 	 * </p>
 	 * @param authentication
 	 * @return <code>true</code> if the implementation can more closely evaluate the

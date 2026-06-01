@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ public class ServerCsrfTokenRequestAttributeHandler implements ServerCsrfTokenRe
 		this.isTokenFromMultipartDataEnabled = tokenFromMultipartDataEnabled;
 	}
 
+	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290
 	private Mono<String> tokenFromMultipartData(ServerWebExchange exchange, CsrfToken expected) {
 		if (!this.isTokenFromMultipartDataEnabled) {
 			return Mono.empty();
@@ -78,7 +79,7 @@ public class ServerCsrfTokenRequestAttributeHandler implements ServerCsrfTokenRe
 			return Mono.empty();
 		}
 		return exchange.getMultipartData()
-			.map((d) -> d.getFirst(expected.getParameterName()))
+			.mapNotNull((d) -> d.getFirst(expected.getParameterName()))
 			.cast(FormFieldPart.class)
 			.map(FormFieldPart::value);
 	}

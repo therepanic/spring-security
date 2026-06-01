@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,16 @@
 
 package org.springframework.security.saml2.provider.service.registration;
 
+import java.io.Serial;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
+import org.jspecify.annotations.Nullable;
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.ext.saml2alg.SigningMethod;
 import org.opensaml.saml.saml2.metadata.EntityDescriptor;
@@ -36,6 +39,7 @@ import org.opensaml.xmlsec.keyinfo.KeyInfoSupport;
 
 import org.springframework.security.saml2.Saml2Exception;
 import org.springframework.security.saml2.core.Saml2X509Credential;
+import org.springframework.util.Assert;
 
 /**
  * A {@link RelyingPartyRegistration.AssertingPartyDetails} that contains
@@ -46,7 +50,10 @@ import org.springframework.security.saml2.core.Saml2X509Credential;
  */
 public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistration.AssertingPartyDetails {
 
-	private final EntityDescriptor descriptor;
+	@Serial
+	private static final long serialVersionUID = -2412785556799182734L;
+
+	private final transient EntityDescriptor descriptor;
 
 	OpenSamlAssertingPartyDetails(RelyingPartyRegistration.AssertingPartyDetails details, EntityDescriptor descriptor) {
 		super(details.getEntityId(), details.getWantAuthnRequestsSigned(), details.getSigningAlgorithms(),
@@ -82,19 +89,19 @@ public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistratio
 		List<Saml2X509Credential> verification = new ArrayList<>();
 		List<Saml2X509Credential> encryption = new ArrayList<>();
 		for (KeyDescriptor keyDescriptor : idpssoDescriptor.getKeyDescriptors()) {
-			if (keyDescriptor.getUse().equals(UsageType.SIGNING)) {
+			if (UsageType.SIGNING.equals(keyDescriptor.getUse())) {
 				List<X509Certificate> certificates = certificates(keyDescriptor);
 				for (X509Certificate certificate : certificates) {
 					verification.add(Saml2X509Credential.verification(certificate));
 				}
 			}
-			if (keyDescriptor.getUse().equals(UsageType.ENCRYPTION)) {
+			if (UsageType.ENCRYPTION.equals(keyDescriptor.getUse())) {
 				List<X509Certificate> certificates = certificates(keyDescriptor);
 				for (X509Certificate certificate : certificates) {
 					encryption.add(Saml2X509Credential.encryption(certificate));
 				}
 			}
-			if (keyDescriptor.getUse().equals(UsageType.UNSPECIFIED)) {
+			if (UsageType.UNSPECIFIED.equals(keyDescriptor.getUse())) {
 				List<X509Certificate> certificates = certificates(keyDescriptor);
 				for (X509Certificate certificate : certificates) {
 					verification.add(Saml2X509Credential.verification(certificate));
@@ -106,14 +113,17 @@ public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistratio
 			throw new Saml2Exception(
 					"Metadata response is missing verification certificates, necessary for verifying SAML assertions");
 		}
+		String entityId = entity.getEntityID();
+		Assert.notNull(entityId, "EntityDescriptor#EntityID cannot be null");
 		OpenSamlAssertingPartyDetails.Builder builder = new OpenSamlAssertingPartyDetails.Builder(entity)
-			.entityId(entity.getEntityID())
+			.entityId(entityId)
 			.wantAuthnRequestsSigned(Boolean.TRUE.equals(idpssoDescriptor.getWantAuthnRequestsSigned()))
 			.verificationX509Credentials((c) -> c.addAll(verification))
 			.encryptionX509Credentials((c) -> c.addAll(encryption));
 
 		List<SigningMethod> signingMethods = signingMethods(idpssoDescriptor);
 		for (SigningMethod method : signingMethods) {
+			Assert.notNull(method.getAlgorithm(), "EntityDescriptor declares a SigningMethod with no value");
 			builder.signingAlgorithms((algorithms) -> algorithms.add(method.getAlgorithm()));
 		}
 		if (idpssoDescriptor.getSingleSignOnServices().isEmpty()) {
@@ -122,32 +132,36 @@ public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistratio
 		}
 		for (SingleSignOnService singleSignOnService : idpssoDescriptor.getSingleSignOnServices()) {
 			Saml2MessageBinding binding;
-			if (singleSignOnService.getBinding().equals(Saml2MessageBinding.POST.getUrn())) {
+			if (Saml2MessageBinding.POST.getUrn().equals(singleSignOnService.getBinding())) {
 				binding = Saml2MessageBinding.POST;
 			}
-			else if (singleSignOnService.getBinding().equals(Saml2MessageBinding.REDIRECT.getUrn())) {
+			else if (Saml2MessageBinding.REDIRECT.getUrn().equals(singleSignOnService.getBinding())) {
 				binding = Saml2MessageBinding.REDIRECT;
 			}
 			else {
 				continue;
 			}
-			builder.singleSignOnServiceLocation(singleSignOnService.getLocation()).singleSignOnServiceBinding(binding);
+			String location = singleSignOnService.getLocation();
+			Assert.notNull(location, "EntityDescriptor has a SingleSignOnService declaration, but no Location");
+			builder.singleSignOnServiceLocation(location).singleSignOnServiceBinding(binding);
 			break;
 		}
 		for (SingleLogoutService singleLogoutService : idpssoDescriptor.getSingleLogoutServices()) {
 			Saml2MessageBinding binding;
-			if (singleLogoutService.getBinding().equals(Saml2MessageBinding.POST.getUrn())) {
+			if (Saml2MessageBinding.POST.getUrn().equals(singleLogoutService.getBinding())) {
 				binding = Saml2MessageBinding.POST;
 			}
-			else if (singleLogoutService.getBinding().equals(Saml2MessageBinding.REDIRECT.getUrn())) {
+			else if (Saml2MessageBinding.REDIRECT.getUrn().equals(singleLogoutService.getBinding())) {
 				binding = Saml2MessageBinding.REDIRECT;
 			}
 			else {
 				continue;
 			}
-			String responseLocation = (singleLogoutService.getResponseLocation() == null)
-					? singleLogoutService.getLocation() : singleLogoutService.getResponseLocation();
-			builder.singleLogoutServiceLocation(singleLogoutService.getLocation())
+			String location = singleLogoutService.getLocation();
+			Assert.notNull(location, "EntityDescriptor has a SingleLogoutService declaration, but no Location");
+			String responseLocation = (singleLogoutService.getResponseLocation() == null) ? location
+					: singleLogoutService.getResponseLocation();
+			builder.singleLogoutServiceLocation(location)
 				.singleLogoutServiceResponseLocation(responseLocation)
 				.singleLogoutServiceBinding(binding);
 			break;
@@ -170,12 +184,12 @@ public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistratio
 		if (!result.isEmpty()) {
 			return result;
 		}
-		EntityDescriptor descriptor = (EntityDescriptor) idpssoDescriptor.getParent();
+		EntityDescriptor descriptor = (EntityDescriptor) Objects.requireNonNull(idpssoDescriptor.getParent());
 		extensions = descriptor.getExtensions();
 		return signingMethods(extensions);
 	}
 
-	private static <T> List<T> signingMethods(Extensions extensions) {
+	private static <T> List<T> signingMethods(@Nullable Extensions extensions) {
 		if (extensions != null) {
 			return (List<T>) extensions.getUnknownXMLObjects(SigningMethod.DEFAULT_ELEMENT_NAME);
 		}
@@ -269,7 +283,7 @@ public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistratio
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Builder singleLogoutServiceLocation(String singleLogoutServiceLocation) {
+		public Builder singleLogoutServiceLocation(@Nullable String singleLogoutServiceLocation) {
 			return (Builder) super.singleLogoutServiceLocation(singleLogoutServiceLocation);
 		}
 
@@ -277,7 +291,7 @@ public final class OpenSamlAssertingPartyDetails extends RelyingPartyRegistratio
 		 * {@inheritDoc}
 		 */
 		@Override
-		public Builder singleLogoutServiceResponseLocation(String singleLogoutServiceResponseLocation) {
+		public Builder singleLogoutServiceResponseLocation(@Nullable String singleLogoutServiceResponseLocation) {
 			return (Builder) super.singleLogoutServiceResponseLocation(singleLogoutServiceResponseLocation);
 		}
 

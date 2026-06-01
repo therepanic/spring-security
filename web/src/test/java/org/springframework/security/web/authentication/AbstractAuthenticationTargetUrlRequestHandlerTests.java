@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,6 +112,14 @@ public class AbstractAuthenticationTargetUrlRequestHandlerTests {
 	@Test
 	void setRedirectStrategyWhenGivenNullThenThrowsException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> this.handler.setRedirectStrategy(null));
+	}
+
+	// gh-18805
+	@Test
+	void returnDefaultUrlIfUseRefererIsTrueAndRefererHeaderIsEmpty() {
+		this.handler.setUseReferer(true);
+		this.request.addHeader("Referer", "");
+		assertThat(this.handler.determineTargetUrl(this.request, this.response)).isEqualTo(DEFAULT_TARGET_URL);
 	}
 
 }

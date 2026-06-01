@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,9 @@ public class RegisterSessionAuthenticationStrategy implements SessionAuthenticat
 	@Override
 	public void onAuthentication(Authentication authentication, HttpServletRequest request,
 			HttpServletResponse response) {
-		this.sessionRegistry.registerNewSession(request.getSession().getId(), authentication.getPrincipal());
+		Object principal = authentication.getPrincipal();
+		Assert.notNull(principal, "The principal cannot be null");
+		this.sessionRegistry.registerNewSession(request.getSession().getId(), principal);
 	}
 
 }

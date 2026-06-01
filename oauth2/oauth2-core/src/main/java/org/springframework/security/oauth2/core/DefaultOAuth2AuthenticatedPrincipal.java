@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
@@ -58,17 +60,21 @@ public final class DefaultOAuth2AuthenticatedPrincipal implements OAuth2Authenti
 	/**
 	 * Constructs an {@code DefaultOAuth2AuthenticatedPrincipal} using the provided
 	 * parameters.
-	 * @param name the name attached to the OAuth 2.0 token
+	 * @param name the name attached to the OAuth 2.0 token, may be {@code null}
 	 * @param attributes the attributes of the OAuth 2.0 token
-	 * @param authorities the authorities of the OAuth 2.0 token
+	 * @param authorities the authorities of the OAuth 2.0 token, may be {@code null}
 	 */
-	public DefaultOAuth2AuthenticatedPrincipal(String name, Map<String, Object> attributes,
-			Collection<GrantedAuthority> authorities) {
+	public DefaultOAuth2AuthenticatedPrincipal(@Nullable String name, Map<String, Object> attributes,
+			@Nullable Collection<GrantedAuthority> authorities) {
 		Assert.notEmpty(attributes, "attributes cannot be empty");
 		this.attributes = Collections.unmodifiableMap(attributes);
 		this.authorities = (authorities != null) ? Collections.unmodifiableCollection(authorities)
 				: AuthorityUtils.NO_AUTHORITIES;
-		this.name = (name != null) ? name : (String) this.attributes.get("sub");
+		// Ensure name is never null - use 'sub' attribute as fallback, then empty string
+		// This satisfies AuthenticatedPrincipal.getName() contract which never returns
+		// null
+		String resolvedName = (name != null) ? name : (String) this.attributes.get("sub");
+		this.name = (resolvedName != null) ? resolvedName : "";
 	}
 
 	/**

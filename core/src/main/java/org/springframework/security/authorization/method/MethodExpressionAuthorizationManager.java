@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.security.authorization.method;
 import java.util.function.Supplier;
 
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
@@ -73,7 +74,9 @@ public final class MethodExpressionAuthorizationManager implements Authorization
 	 * expression
 	 */
 	@Override
-	public AuthorizationResult authorize(Supplier<Authentication> authentication, MethodInvocation context) {
+	@SuppressWarnings("NullAway") // FIXME: Dataflow analysis limitation
+	public AuthorizationResult authorize(Supplier<? extends @Nullable Authentication> authentication,
+			MethodInvocation context) {
 		EvaluationContext ctx = this.expressionHandler.createEvaluationContext(authentication, context);
 		boolean granted = ExpressionUtils.evaluateAsBoolean(this.expression, ctx);
 		return new ExpressionAuthorizationDecision(granted, this.expression);

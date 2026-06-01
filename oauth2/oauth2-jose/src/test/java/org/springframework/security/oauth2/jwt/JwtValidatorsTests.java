@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatException;
  * Tests for {@link JwtValidators}.
  *
  * @author Max Batischev
+ * @author Giacomo Baso
  */
 public class JwtValidatorsTests {
 
@@ -103,6 +104,24 @@ public class JwtValidatorsTests {
 
 		result = validator.validate(builder.issuer("issuer").build());
 		assertThat(result.getErrors().toString()).doesNotContain("iss");
+	}
+
+	@Test
+	void createAtJwtWhenClientIdIsNotPresentThenRequireClientIdWithAnyValue() {
+		Jwt.Builder builder = TestJwts.jwt();
+		OAuth2TokenValidator<Jwt> validator = JwtValidators.createAtJwtValidator()
+			.audience("audience")
+			.issuer("issuer")
+			.build();
+
+		OAuth2TokenValidatorResult result = validator.validate(builder.build());
+		assertThat(result.getErrors().toString()).contains("at+jwt")
+			.contains("aud")
+			.contains("client_id")
+			.contains("iss");
+
+		result = validator.validate(builder.claim("client_id", "clientId").build());
+		assertThat(result.getErrors().toString()).doesNotContain("client_id");
 	}
 
 	@SuppressWarnings("unchecked")

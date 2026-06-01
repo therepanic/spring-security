@@ -24,6 +24,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -73,9 +74,9 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
 		.getContextHolderStrategy();
 
-	private ApplicationEventPublisher eventPublisher;
+	private @Nullable ApplicationEventPublisher eventPublisher;
 
-	private AuthenticationSuccessHandler successHandler;
+	private @Nullable AuthenticationSuccessHandler successHandler;
 
 	private AuthenticationManager authenticationManager;
 
@@ -114,23 +115,23 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 			chain.doFilter(request, response);
 			return;
 		}
-		Authentication rememberMeAuth = this.rememberMeServices.autoLogin(request, response);
-		if (rememberMeAuth != null) {
+		Authentication remembermeToken = this.rememberMeServices.autoLogin(request, response);
+		if (remembermeToken != null) {
 			// Attempt authentication via AuthenticationManager
 			try {
-				rememberMeAuth = this.authenticationManager.authenticate(rememberMeAuth);
+				Authentication rememberMeAuth = this.authenticationManager.authenticate(remembermeToken);
 				this.sessionStrategy.onAuthentication(rememberMeAuth, request, response);
 				// Store to SecurityContextHolder
 				SecurityContext context = this.securityContextHolderStrategy.createEmptyContext();
 				context.setAuthentication(rememberMeAuth);
 				this.securityContextHolderStrategy.setContext(context);
 				onSuccessfulAuthentication(request, response, rememberMeAuth);
-				this.logger.debug(LogMessage.of(() -> "SecurityContextHolder populated with remember-me token: '"
-						+ this.securityContextHolderStrategy.getContext().getAuthentication() + "'"));
+				this.logger.debug(LogMessage
+					.of(() -> "SecurityContextHolder populated with remember-me token: '" + rememberMeAuth + "'"));
 				this.securityContextRepository.saveContext(context, request, response);
 				if (this.eventPublisher != null) {
-					this.eventPublisher.publishEvent(new InteractiveAuthenticationSuccessEvent(
-							this.securityContextHolderStrategy.getContext().getAuthentication(), this.getClass()));
+					this.eventPublisher
+						.publishEvent(new InteractiveAuthenticationSuccessEvent(rememberMeAuth, this.getClass()));
 				}
 				if (this.successHandler != null) {
 					this.successHandler.onAuthenticationSuccess(request, response, rememberMeAuth);
@@ -141,7 +142,7 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 				this.logger.debug(LogMessage
 					.format("SecurityContextHolder not populated with remember-me token, as AuthenticationManager "
 							+ "rejected Authentication returned by RememberMeServices: '%s'; "
-							+ "invalidating remember-me token", rememberMeAuth),
+							+ "invalidating remember-me token", remembermeToken),
 						ex);
 				this.rememberMeServices.loginFail(request, response);
 				onUnsuccessfulAuthentication(request, response, ex);
@@ -163,7 +164,7 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 	 * Called if the {@code AuthenticationManager} rejects the authentication object
 	 * returned from the {@code RememberMeServices} {@code autoLogin} method. This method
 	 * will not be called when no remember-me token is present in the request and
-	 * {@code autoLogin} reurns null.
+	 * {@code autoLogin} returns {@code null}.
 	 */
 	protected void onUnsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response,
 			AuthenticationException failed) {
@@ -183,7 +184,7 @@ public class RememberMeAuthenticationFilter extends GenericFilterBean implements
 	 * successfully authenticated. By default, the filter will just allow the current
 	 * request to proceed, but if an {@code AuthenticationSuccessHandler} is set, it will
 	 * be invoked and the {@code doFilter()} method will return immediately, thus allowing
-	 * the application to redirect the user to a specific URL, regardless of whatthe
+	 * the application to redirect the user to a specific URL, regardless of what the
 	 * original request was for.
 	 * @param successHandler the strategy to invoke immediately before returning from
 	 * {@code doFilter()}.

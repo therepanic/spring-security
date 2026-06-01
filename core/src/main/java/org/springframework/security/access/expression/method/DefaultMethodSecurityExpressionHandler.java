@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,23 +23,27 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.core.log.LogMessage;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
+import org.springframework.expression.TypedValue;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.access.PermissionCacheOptimizer;
 import org.springframework.security.access.expression.AbstractSecurityExpressionHandler;
 import org.springframework.security.access.expression.ExpressionUtils;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authorization.AuthorizationManagerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.parameters.DefaultSecurityParameterNameDiscoverer;
 import org.springframework.util.Assert;
@@ -53,10 +57,13 @@ import org.springframework.util.Assert;
  * @author Luke Taylor
  * @author Evgeniy Cheban
  * @author Blagoja Stamatovski
+ * @author Steve Riesenberg
  * @since 3.0
  */
 public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpressionHandler<MethodInvocation>
 		implements MethodSecurityExpressionHandler {
+
+	private static final String DEFAULT_ROLE_PREFIX = "ROLE_";
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -64,9 +71,9 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 
 	private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultSecurityParameterNameDiscoverer();
 
-	private PermissionCacheOptimizer permissionCacheOptimizer = null;
+	private @Nullable PermissionCacheOptimizer permissionCacheOptimizer = null;
 
-	private String defaultRolePrefix = "ROLE_";
+	private String defaultRolePrefix = DEFAULT_ROLE_PREFIX;
 
 	public DefaultMethodSecurityExpressionHandler() {
 	}
@@ -76,16 +83,19 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 	 * implementation.
 	 */
 	@Override
-	public StandardEvaluationContext createEvaluationContextInternal(Authentication auth, MethodInvocation mi) {
+	public StandardEvaluationContext createEvaluationContextInternal(@Nullable Authentication auth,
+			MethodInvocation mi) {
 		return new MethodSecurityEvaluationContext(auth, mi, getParameterNameDiscoverer());
 	}
 
 	@Override
-	public EvaluationContext createEvaluationContext(Supplier<Authentication> authentication, MethodInvocation mi) {
+	@SuppressWarnings("NullAway") // FIXME: Dataflow analysis limitation
+	public EvaluationContext createEvaluationContext(Supplier<? extends @Nullable Authentication> authentication,
+			MethodInvocation mi) {
 		MethodSecurityExpressionOperations root = createSecurityExpressionRoot(authentication, mi);
 		MethodSecurityEvaluationContext ctx = new MethodSecurityEvaluationContext(root, mi,
 				getParameterNameDiscoverer());
-		ctx.setBeanResolver(getBeanResolver());
+		Optional.ofNullable(getBeanResolver()).ifPresent(ctx::setBeanResolver);
 		return ctx;
 	}
 
@@ -93,19 +103,21 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 	 * Creates the root object for expression evaluation.
 	 */
 	@Override
-	protected MethodSecurityExpressionOperations createSecurityExpressionRoot(Authentication authentication,
+	protected MethodSecurityExpressionOperations createSecurityExpressionRoot(@Nullable Authentication authentication,
 			MethodInvocation invocation) {
 		return createSecurityExpressionRoot(() -> authentication, invocation);
 	}
 
-	private MethodSecurityExpressionOperations createSecurityExpressionRoot(Supplier<Authentication> authentication,
-			MethodInvocation invocation) {
-		MethodSecurityExpressionRoot root = new MethodSecurityExpressionRoot(authentication);
+	private MethodSecurityExpressionOperations createSecurityExpressionRoot(
+			Supplier<? extends @Nullable Authentication> authentication, MethodInvocation invocation) {
+		MethodSecurityExpressionRoot root = new MethodSecurityExpressionRoot(authentication, invocation);
 		root.setThis(invocation.getThis());
+		root.setAuthorizationManagerFactory(getAuthorizationManagerFactory());
 		root.setPermissionEvaluator(getPermissionEvaluator());
-		root.setTrustResolver(getTrustResolver());
-		root.setRoleHierarchy(getRoleHierarchy());
-		root.setDefaultRolePrefix(getDefaultRolePrefix());
+		if (!DEFAULT_ROLE_PREFIX.equals(this.defaultRolePrefix)) {
+			// Ensure SecurityExpressionRoot can strip the custom role prefix
+			root.setDefaultRolePrefix(getDefaultRolePrefix());
+		}
 		return root;
 	}
 
@@ -119,14 +131,15 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 	 * {@link Stream}
 	 */
 	@Override
-	public Object filter(Object filterTarget, Expression filterExpression, EvaluationContext ctx) {
+	public Object filter(@Nullable Object filterTarget, Expression filterExpression, EvaluationContext ctx) {
 		MethodSecurityExpressionOperations rootObject = (MethodSecurityExpressionOperations) ctx.getRootObject()
 			.getValue();
+		Assert.notNull(rootObject, "rootObject cannot be null");
 		this.logger.debug(LogMessage.format("Filtering with expression: %s", filterExpression.getExpressionString()));
 		if (filterTarget instanceof Collection) {
 			return filterCollection((Collection<?>) filterTarget, filterExpression, ctx, rootObject);
 		}
-		if (filterTarget.getClass().isArray()) {
+		if (filterTarget != null && filterTarget.getClass().isArray()) {
 			return filterArray((Object[]) filterTarget, filterExpression, ctx, rootObject);
 		}
 		if (filterTarget instanceof Map) {
@@ -225,15 +238,22 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 	 * {@link AuthenticationTrustResolverImpl}.
 	 * @param trustResolver the {@link AuthenticationTrustResolver} to use. Cannot be
 	 * null.
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
+	@Deprecated(since = "7.0")
 	public void setTrustResolver(AuthenticationTrustResolver trustResolver) {
 		Assert.notNull(trustResolver, "trustResolver cannot be null");
+		getDefaultAuthorizationManagerFactory().setTrustResolver(trustResolver);
 		this.trustResolver = trustResolver;
 	}
 
 	/**
 	 * @return The current {@link AuthenticationTrustResolver}
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
+	@Deprecated(since = "7.0")
 	protected AuthenticationTrustResolver getTrustResolver() {
 		return this.trustResolver;
 	}
@@ -259,8 +279,13 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 	}
 
 	@Override
-	public void setReturnObject(Object returnObject, EvaluationContext ctx) {
-		((MethodSecurityExpressionOperations) ctx.getRootObject().getValue()).setReturnObject(returnObject);
+	public void setReturnObject(@Nullable Object returnObject, EvaluationContext ctx) {
+		TypedValue rootObject = ctx.getRootObject();
+		Assert.notNull(rootObject, "rootObject cannot be null");
+		MethodSecurityExpressionOperations methodOperations = (MethodSecurityExpressionOperations) rootObject
+			.getValue();
+		Assert.notNull(methodOperations, "MethodSecurityExpressionOperations cannot be null");
+		methodOperations.setReturnObject(returnObject);
 	}
 
 	/**
@@ -277,14 +302,24 @@ public class DefaultMethodSecurityExpressionHandler extends AbstractSecurityExpr
 	 * If null or empty, then no default role prefix is used.
 	 * </p>
 	 * @param defaultRolePrefix the default prefix to add to roles. Default "ROLE_".
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
-	public void setDefaultRolePrefix(String defaultRolePrefix) {
+	@Deprecated(since = "7.0")
+	public void setDefaultRolePrefix(@Nullable String defaultRolePrefix) {
+		if (defaultRolePrefix == null) {
+			defaultRolePrefix = "";
+		}
+		getDefaultAuthorizationManagerFactory().setRolePrefix(defaultRolePrefix);
 		this.defaultRolePrefix = defaultRolePrefix;
 	}
 
 	/**
 	 * @return The default role prefix
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
+	@Deprecated(since = "7.0")
 	protected String getDefaultRolePrefix() {
 		return this.defaultRolePrefix;
 	}

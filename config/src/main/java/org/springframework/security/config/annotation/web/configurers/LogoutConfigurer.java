@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,8 @@ import org.springframework.util.Assert;
 
 /**
  * Adds logout support. Other {@link SecurityConfigurer} instances may invoke
- * {@link #addLogoutHandler(LogoutHandler)} in the {@link #init(HttpSecurityBuilder)}
+ * {@link #addLogoutHandler(LogoutHandler)} in the
+ * {@link SecurityConfigurer#init(org.springframework.security.config.annotation.SecurityBuilder)}
  * phase.
  *
  * <h2>Security Filters</h2>
@@ -288,7 +289,7 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	@Override
-	public void configure(H http) throws Exception {
+	public void configure(H http) {
 		LogoutFilter logoutFilter = createLogoutFilter(http);
 		http.addFilter(logoutFilter);
 	}
@@ -304,7 +305,7 @@ public final class LogoutConfigurer<H extends HttpSecurityBuilder<H>>
 	}
 
 	/**
-	 * Gets the logoutSuccesUrl or null if a
+	 * Gets the logoutSuccessUrl or null if a
 	 * {@link #logoutSuccessHandler(LogoutSuccessHandler)} was configured.
 	 * @return the logoutSuccessUrl
 	 */

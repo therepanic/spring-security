@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,8 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.Set;
 
-import org.springframework.security.core.SpringSecurityCoreVersion;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -53,11 +54,12 @@ public class OAuth2AccessToken extends AbstractOAuth2Token {
 	 * Constructs an {@code OAuth2AccessToken} using the provided parameters.
 	 * @param tokenType the token type
 	 * @param tokenValue the token value
-	 * @param issuedAt the time at which the token was issued
+	 * @param issuedAt the time at which the token was issued, may be {@code null}
 	 * @param expiresAt the expiration time on or after which the token MUST NOT be
-	 * accepted
+	 * accepted, may be {@code null}
 	 */
-	public OAuth2AccessToken(TokenType tokenType, String tokenValue, Instant issuedAt, Instant expiresAt) {
+	public OAuth2AccessToken(TokenType tokenType, String tokenValue, @Nullable Instant issuedAt,
+			@Nullable Instant expiresAt) {
 		this(tokenType, tokenValue, issuedAt, expiresAt, Collections.emptySet());
 	}
 
@@ -65,13 +67,13 @@ public class OAuth2AccessToken extends AbstractOAuth2Token {
 	 * Constructs an {@code OAuth2AccessToken} using the provided parameters.
 	 * @param tokenType the token type
 	 * @param tokenValue the token value
-	 * @param issuedAt the time at which the token was issued
+	 * @param issuedAt the time at which the token was issued, may be {@code null}
 	 * @param expiresAt the expiration time on or after which the token MUST NOT be
-	 * accepted
+	 * accepted, may be {@code null}
 	 * @param scopes the scope(s) associated to the token
 	 */
-	public OAuth2AccessToken(TokenType tokenType, String tokenValue, Instant issuedAt, Instant expiresAt,
-			Set<String> scopes) {
+	public OAuth2AccessToken(TokenType tokenType, String tokenValue, @Nullable Instant issuedAt,
+			@Nullable Instant expiresAt, Set<String> scopes) {
 		super(tokenValue, issuedAt, expiresAt);
 		Assert.notNull(tokenType, "tokenType cannot be null");
 		this.tokenType = tokenType;
@@ -103,7 +105,7 @@ public class OAuth2AccessToken extends AbstractOAuth2Token {
 	 */
 	public static final class TokenType implements Serializable {
 
-		private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+		private static final long serialVersionUID = 620L;
 
 		public static final TokenType BEARER = new TokenType("Bearer");
 
@@ -133,7 +135,7 @@ public class OAuth2AccessToken extends AbstractOAuth2Token {
 		}
 
 		@Override
-		public boolean equals(Object obj) {
+		public boolean equals(@Nullable Object obj) {
 			if (this == obj) {
 				return true;
 			}

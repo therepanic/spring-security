@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.ldap.authentication;
 
 import java.util.Collection;
+import java.util.LinkedHashSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -24,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceAware;
 import org.springframework.context.support.MessageSourceAccessor;
-import org.springframework.lang.NonNull;
 import org.springframework.ldap.core.DirContextOperations;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -33,6 +33,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityMessageSource;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.authority.mapping.NullAuthoritiesMapper;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -49,6 +50,8 @@ import org.springframework.util.StringUtils;
  * @since 3.1
  */
 public abstract class AbstractLdapAuthenticationProvider implements AuthenticationProvider, MessageSourceAware {
+
+	private static final String AUTHORITY = FactorGrantedAuthority.PASSWORD_AUTHORITY;
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
@@ -79,7 +82,7 @@ public abstract class AbstractLdapAuthenticationProvider implements Authenticati
 		Assert.notNull(password, "Null password was supplied in authentication token");
 		DirContextOperations userData = doAuthentication(userToken);
 		UserDetails user = this.userDetailsContextMapper.mapUserFromContext(userData, authentication.getName(),
-				loadUserAuthorities(userData, authentication.getName(), (String) authentication.getCredentials()));
+				loadUserAuthorities(userData, authentication.getName(), password));
 		return createSuccessfulAuthentication(userToken, user);
 	}
 
@@ -100,8 +103,11 @@ public abstract class AbstractLdapAuthenticationProvider implements Authenticati
 			UserDetails user) {
 		Object password = this.useAuthenticationRequestCredentials ? authentication.getCredentials()
 				: user.getPassword();
-		UsernamePasswordAuthenticationToken result = UsernamePasswordAuthenticationToken.authenticated(user, password,
+		Collection<GrantedAuthority> authorities = new LinkedHashSet<>(
 				this.authoritiesMapper.mapAuthorities(user.getAuthorities()));
+		authorities.add(FactorGrantedAuthority.fromAuthority(AUTHORITY));
+		UsernamePasswordAuthenticationToken result = UsernamePasswordAuthenticationToken.authenticated(user, password,
+				authorities);
 		result.setDetails(authentication.getDetails());
 		this.logger.debug("Authenticated user");
 		return result;
@@ -126,7 +132,7 @@ public abstract class AbstractLdapAuthenticationProvider implements Authenticati
 	}
 
 	@Override
-	public void setMessageSource(@NonNull MessageSource messageSource) {
+	public void setMessageSource(MessageSource messageSource) {
 		this.messages = new MessageSourceAccessor(messageSource);
 	}
 

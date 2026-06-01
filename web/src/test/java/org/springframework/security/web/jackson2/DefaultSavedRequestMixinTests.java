@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,9 +28,9 @@ import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.web.PortResolverImpl;
 import org.springframework.security.web.savedrequest.DefaultSavedRequest;
 import org.springframework.security.web.savedrequest.SavedCookie;
+import org.springframework.security.web.util.UrlUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -107,7 +107,8 @@ public class DefaultSavedRequestMixinTests extends AbstractMixinTests {
 		MockHttpServletRequest mockRequest = new MockHttpServletRequest();
 		mockRequest.setCookies(new Cookie("SESSION", "123456789"));
 		mockRequest.addHeader("x-auth-token", "12");
-		assertThat(request.doesRequestMatch(mockRequest, new PortResolverImpl())).isTrue();
+		String currentUrl = UrlUtils.buildFullRequestUrl(mockRequest);
+		assertThat(request.getRedirectUrl().equals(currentUrl)).isTrue();
 	}
 
 	@Test
@@ -123,7 +124,7 @@ public class DefaultSavedRequestMixinTests extends AbstractMixinTests {
 			}
 		};
 		String actualString = this.mapper.writerWithDefaultPrettyPrinter()
-			.writeValueAsString(new DefaultSavedRequest(requestToWrite, new PortResolverImpl()));
+			.writeValueAsString(new DefaultSavedRequest(requestToWrite));
 		JSONAssert.assertEquals(REQUEST_JSON, actualString, true);
 	}
 

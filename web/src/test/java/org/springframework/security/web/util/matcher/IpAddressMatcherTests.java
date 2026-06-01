@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 /**
  * @author Luke Taylor
+ * @author Andrey Litvitski
  */
 public class IpAddressMatcherTests {
 
@@ -153,6 +154,12 @@ public class IpAddressMatcherTests {
 			.withMessage("ipAddress cannot be empty");
 	}
 
+	@Test
+	public void isIpAddressWhenEmptyOrBlankThenThrowsIllegalArgumentException() {
+		assertThatIllegalArgumentException().isThrownBy(() -> new IpAddressMatcher("   "))
+			.withMessage("ipAddress cannot be empty");
+	}
+
 	// gh-16795
 	@Test
 	public void toStringWhenCidrIsProvidedThenReturnsIpAddressWithCidr() {
@@ -165,6 +172,14 @@ public class IpAddressMatcherTests {
 	public void toStringWhenOnlyIpIsProvidedThenReturnsIpAddressOnly() {
 		IpAddressMatcher matcher = new IpAddressMatcher("127.0.0.1");
 		assertThat(matcher.toString()).hasToString("IpAddress [127.0.0.1]");
+	}
+
+	// gh-17499
+	@Test
+	public void constructorRejectsInvalidIpv4WithX() {
+		String badIp = "10x1x1x1";
+		assertThatIllegalArgumentException().isThrownBy(() -> new IpAddressMatcher(badIp))
+			.withMessage("ipAddress 10x1x1x1 doesn't look like an IP Address. Is it a host name?");
 	}
 
 }

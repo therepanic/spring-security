@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.opensaml.core.Version;
 import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
 import org.opensaml.core.xml.io.Marshaller;
 import org.opensaml.saml.saml2.core.Assertion;
@@ -58,6 +57,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
+import org.springframework.security.config.web.PathPatternRequestMatcherBuilderFactoryBean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -69,7 +69,6 @@ import org.springframework.security.saml2.core.Saml2ErrorCodes;
 import org.springframework.security.saml2.core.Saml2Utils;
 import org.springframework.security.saml2.core.TestSaml2X509Credentials;
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
-import org.springframework.security.saml2.provider.service.authentication.OpenSaml4AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.OpenSaml5AuthenticationProvider;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
 import org.springframework.security.saml2.provider.service.authentication.Saml2Authentication;
@@ -84,7 +83,6 @@ import org.springframework.security.saml2.provider.service.web.DefaultRelyingPar
 import org.springframework.security.saml2.provider.service.web.RelyingPartyRegistrationResolver;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationRequestRepository;
 import org.springframework.security.saml2.provider.service.web.Saml2AuthenticationTokenConverter;
-import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml4AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.OpenSaml5AuthenticationRequestResolver;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2AuthenticationRequestResolver;
 import org.springframework.security.web.FilterChainProxy;
@@ -138,8 +136,6 @@ public class Saml2LoginConfigurerTests {
 		.assertingPartyMetadata((party) -> party
 			.verificationX509Credentials((c) -> c.add(TestSaml2X509Credentials.relyingPartyVerifyingCredential())))
 		.build();
-
-	private static final boolean USE_OPENSAML_5 = Version.getVersion().startsWith("5");
 
 	private static String SIGNED_RESPONSE;
 
@@ -247,6 +243,14 @@ public class Saml2LoginConfigurerTests {
 	public void saml2LoginWhenDefaultAndSamlAuthenticationManagerThenSamlManagerIsUsed() throws Exception {
 		this.spring.register(Saml2LoginConfigWithDefaultAndCustomAuthenticationManager.class).autowire();
 		performSaml2Login("ROLE_AUTH_MANAGER");
+	}
+
+	// gh-19128
+	@Test
+	public void saml2LoginWhenBuilderBeanWithBasePathThenAuthenticateUriIgnoresBasePath() throws Exception {
+		this.spring.register(Saml2LoginBuilderBeanConfig.class).autowire();
+		MvcResult result = this.mvc.perform(get("/saml2/authenticate/registration-id")).andReturn();
+		assertThat(result.getResponse().getRedirectedUrl()).contains("SAMLRequest");
 	}
 
 	@Test
@@ -361,7 +365,7 @@ public class Saml2LoginConfigurerTests {
 		MockHttpServletRequestBuilder request = get("/custom/auth/sso");
 		this.mvc.perform(request)
 			.andExpect(status().isFound())
-			.andExpect(redirectedUrl("http://localhost/custom/auth/sso?entityId=registration-id"));
+			.andExpect(redirectedUrl("/custom/auth/sso?entityId=registration-id"));
 		request.queryParam("entityId", registration.getRegistrationId());
 		MvcResult result = this.mvc.perform(request).andExpect(status().isFound()).andReturn();
 		String redirectedUrl = result.getResponse().getRedirectedUrl();
@@ -412,10 +416,10 @@ public class Saml2LoginConfigurerTests {
 		this.spring.register(Saml2LoginConfig.class).autowire();
 		this.mvc.perform(get("/favicon.ico").accept(MediaType.TEXT_HTML))
 			.andExpect(status().isFound())
-			.andExpect(redirectedUrl("http://localhost/login"));
+			.andExpect(redirectedUrl("/login"));
 		this.mvc.perform(get("/").accept(MediaType.TEXT_HTML))
 			.andExpect(status().isFound())
-			.andExpect(header().string("Location", startsWith("http://localhost/saml2/authenticate")));
+			.andExpect(header().string("Location", startsWith("/saml2/authenticate")));
 	}
 
 	@Test
@@ -527,6 +531,33 @@ public class Saml2LoginConfigurerTests {
 
 	}
 
+	// gh-19128
+	@Configuration
+	@EnableWebSecurity
+	@Import(Saml2LoginConfigBeans.class)
+	static class Saml2LoginBuilderBeanConfig {
+
+		@Bean
+		PathPatternRequestMatcherBuilderFactoryBean requestMatcherBuilder() {
+			PathPatternRequestMatcherBuilderFactoryBean bean = new PathPatternRequestMatcherBuilderFactoryBean();
+			bean.setBasePath("/spring");
+			return bean;
+		}
+
+		@Bean
+		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.authorizeHttpRequests((authz) -> authz
+					.anyRequest().authenticated()
+				)
+				.saml2Login(Customizer.withDefaults());
+			// @formatter:on
+			return http.build();
+		}
+
+	}
+
 	@Configuration
 	@EnableWebSecurity
 	@Import(Saml2LoginConfigBeans.class)
@@ -550,13 +581,7 @@ public class Saml2LoginConfigurerTests {
 				RelyingPartyRegistrationRepository registrations) {
 			RelyingPartyRegistrationResolver registrationResolver = new DefaultRelyingPartyRegistrationResolver(
 					registrations);
-			if (USE_OPENSAML_5) {
-				OpenSaml5AuthenticationRequestResolver delegate = new OpenSaml5AuthenticationRequestResolver(
-						registrationResolver);
-				delegate.setAuthnRequestCustomizer((parameters) -> parameters.getAuthnRequest().setForceAuthn(true));
-				return delegate;
-			}
-			OpenSaml4AuthenticationRequestResolver delegate = new OpenSaml4AuthenticationRequestResolver(
+			OpenSaml5AuthenticationRequestResolver delegate = new OpenSaml5AuthenticationRequestResolver(
 					registrationResolver);
 			delegate.setAuthnRequestCustomizer((parameters) -> parameters.getAuthnRequest().setForceAuthn(true));
 			return delegate;
@@ -589,13 +614,7 @@ public class Saml2LoginConfigurerTests {
 				RelyingPartyRegistrationRepository registrations) {
 			RelyingPartyRegistrationResolver registrationResolver = new DefaultRelyingPartyRegistrationResolver(
 					registrations);
-			if (USE_OPENSAML_5) {
-				OpenSaml5AuthenticationRequestResolver delegate = new OpenSaml5AuthenticationRequestResolver(
-						registrationResolver);
-				delegate.setAuthnRequestCustomizer((parameters) -> parameters.getAuthnRequest().setForceAuthn(true));
-				return delegate;
-			}
-			OpenSaml4AuthenticationRequestResolver delegate = new OpenSaml4AuthenticationRequestResolver(
+			OpenSaml5AuthenticationRequestResolver delegate = new OpenSaml5AuthenticationRequestResolver(
 					registrationResolver);
 			delegate.setAuthnRequestCustomizer((parameters) -> parameters.getAuthnRequest().setForceAuthn(true));
 			return delegate;
@@ -773,8 +792,7 @@ public class Saml2LoginConfigurerTests {
 	@Import(Saml2LoginConfigBeans.class)
 	static class CustomAuthenticationProviderConfig {
 
-		private final AuthenticationProvider provider = spy(
-				USE_OPENSAML_5 ? new OpenSaml5AuthenticationProvider() : new OpenSaml4AuthenticationProvider());
+		private final AuthenticationProvider provider = spy(new OpenSaml5AuthenticationProvider());
 
 		@Bean
 		SecurityFilterChain web(HttpSecurity http) throws Exception {

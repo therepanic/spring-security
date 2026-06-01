@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.core.Authentication;
@@ -60,11 +61,12 @@ public class SecurityContextLogoutHandler implements LogoutHandler {
 	/**
 	 * Requires the request to be passed in.
 	 * @param request from which to obtain a HTTP session (cannot be null)
-	 * @param response not used (can be <code>null</code>)
+	 * @param response the response (cannot be null)
 	 * @param authentication not used (can be <code>null</code>)
 	 */
 	@Override
-	public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+	public void logout(HttpServletRequest request, HttpServletResponse response,
+			@Nullable Authentication authentication) {
 		Assert.notNull(request, "HttpServletRequest required");
 		if (this.invalidateHttpSession) {
 			HttpSession session = request.getSession(false);

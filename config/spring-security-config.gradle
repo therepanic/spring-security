@@ -1,10 +1,12 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.gradle.xsd.CreateVersionlessXsdTask
 import trang.RncToXsd
 
 apply plugin: 'io.spring.convention.spring-module'
 apply plugin: 'trang'
 apply plugin: 'security-kotlin'
+apply plugin: 'test-compile-target-jdk25'
+apply plugin: 'compile-warnings-error'
+apply plugin:  'javadoc-warnings-error'
 
 configurations {
 	opensaml5 {
@@ -21,16 +23,18 @@ dependencies {
 	api 'org.springframework:spring-context'
 	api 'org.springframework:spring-core'
 
+	optional project(':spring-security-access')
 	optional project(':spring-security-data')
 	optional project(':spring-security-ldap')
 	optional project(':spring-security-messaging')
 	optional project(path: ':spring-security-saml2-service-provider')
-	opensaml5 project(path: ':spring-security-saml2-service-provider', configuration: 'opensamlFiveMain')
 	optional project(':spring-security-oauth2-client')
 	optional project(':spring-security-oauth2-jose')
 	optional project(':spring-security-oauth2-resource-server')
+	optional project(':spring-security-oauth2-authorization-server')
 	optional project(':spring-security-rsocket')
 	optional project(':spring-security-web')
+	optional project(':spring-security-webauthn')
 	optional 'io.projectreactor:reactor-core'
 	optional 'org.aspectj:aspectjweaver'
 	optional 'org.springframework:spring-jdbc'
@@ -43,20 +47,22 @@ dependencies {
 	optional 'org.jetbrains.kotlin:kotlin-reflect'
 	optional 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 	optional 'jakarta.annotation:jakarta.annotation-api'
-	optional libs.webauthn4j.core
 
 	provided 'jakarta.servlet:jakarta.servlet-api'
 
 	testImplementation project(':spring-security-aspects')
 	testImplementation project(':spring-security-cas')
 	testImplementation project(':spring-security-test')
+	testImplementation project(path : ':spring-security-access', configuration : 'tests')
 	testImplementation project(path : ':spring-security-core', configuration : 'tests')
 	testImplementation project(path : ':spring-security-ldap', configuration : 'tests')
 	testImplementation project(path : ':spring-security-oauth2-client', configuration : 'tests')
 	testImplementation project(path : ':spring-security-oauth2-resource-server', configuration : 'tests')
+	testImplementation project(path : ':spring-security-oauth2-authorization-server', configuration : 'tests')
 	testImplementation project(':spring-security-saml2-service-provider')
 	testImplementation project(path : ':spring-security-saml2-service-provider', configuration : 'tests')
 	testImplementation project(path : ':spring-security-web', configuration : 'tests')
+	testImplementation project(path : ':spring-security-webauthn', configuration : 'tests')
 	testImplementation "jakarta.inject:jakarta.inject-api"
 	testImplementation "org.assertj:assertj-core"
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -141,14 +147,14 @@ tasks.named('processResources', ProcessResources).configure {
 		into 'org/springframework/security/config/'
 	}
 	from(rncToXsd) {
-		duplicatesStrategy DuplicatesStrategy.EXCLUDE
+		duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 		into 'org/springframework/security/config/'
 	}
 }
 
 tasks.named('sourcesJar', Jar).configure {
 	from(rncToXsd) {
-		duplicatesStrategy DuplicatesStrategy.EXCLUDE
+		duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 		into 'org/springframework/security/config/'
 	}
 }
@@ -168,16 +174,4 @@ test {
 			logger.lifecycle(event.message)
 		}
 	}
-}
-
-tasks.register("opensaml5Test", Test) {
-	filter {
-		includeTestsMatching "org.springframework.security.config.annotation.web.configurers.saml2.*"
-	}
-	useJUnitPlatform()
-	classpath = sourceSets.main.output + sourceSets.test.output + configurations.opensaml5
-}
-
-tasks.named("check") {
-	dependsOn opensaml5Test
 }

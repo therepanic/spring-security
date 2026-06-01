@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,9 +26,9 @@ import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationConvention;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
@@ -68,13 +68,14 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 		return new ObservationWebFilterChain(wrapSecured(original)::filter, wrap(filters));
 	}
 
-	private static AroundWebFilterObservation observation(ServerWebExchange exchange) {
+	private static @Nullable AroundWebFilterObservation observation(ServerWebExchange exchange) {
 		return exchange.getAttribute(ATTRIBUTE);
 	}
 
 	private WebFilterChain wrapSecured(WebFilterChain original) {
 		return (exchange) -> Mono.deferContextual((contextView) -> {
 			AroundWebFilterObservation parent = observation(exchange);
+			Assert.notNull(parent, "AroundWebFilterObservation parent cannot be null");
 			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
 			Observation observation = Observation.createNotStarted(SECURED_OBSERVATION_NAME, this.registry)
 				.contextualName("secured request")
@@ -108,11 +109,9 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 
 		private final WebHandler handler;
 
-		@Nullable
-		private final ObservationWebFilter currentFilter;
+		private final @Nullable ObservationWebFilter currentFilter;
 
-		@Nullable
-		private final ObservationWebFilterChain chain;
+		private final @Nullable ObservationWebFilterChain chain;
 
 		/**
 		 * Public constructor with the list of filters and the target handler to use.
@@ -203,6 +202,7 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 
 		private Mono<Void> wrapFilter(ServerWebExchange exchange, WebFilterChain chain) {
 			AroundWebFilterObservation parent = observation(exchange);
+			Assert.notNull(parent, "ObservationWebFilter parent is required");
 			if (parent.before().getContext() instanceof WebFilterChainObservationContext parentBefore) {
 				parentBefore.setChainSize(this.size);
 				parentBefore.setFilterName(this.name);
@@ -218,7 +218,7 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 			});
 		}
 
-		private AroundWebFilterObservation parent(ServerWebExchange exchange, Observation parentObservation) {
+		private AroundWebFilterObservation parent(ServerWebExchange exchange, @Nullable Observation parentObservation) {
 			WebFilterChainObservationContext beforeContext = WebFilterChainObservationContext.before();
 			WebFilterChainObservationContext afterContext = WebFilterChainObservationContext.after();
 			Observation before = Observation.createNotStarted(this.convention, () -> beforeContext, this.registry)
@@ -303,12 +303,12 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 			}
 
 			@Override
-			public Observation contextualName(String contextualName) {
+			public Observation contextualName(@Nullable String contextualName) {
 				return this.currentObservation.observation.contextualName(contextualName);
 			}
 
 			@Override
-			public Observation parentObservation(Observation parentObservation) {
+			public Observation parentObservation(@Nullable Observation parentObservation) {
 				return this.currentObservation.observation.parentObservation(parentObservation);
 			}
 
@@ -407,12 +407,12 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 		}
 
 		@Override
-		default Observation contextualName(String contextualName) {
+		default Observation contextualName(@Nullable String contextualName) {
 			return Observation.NOOP;
 		}
 
 		@Override
-		default Observation parentObservation(Observation parentObservation) {
+		default Observation parentObservation(@Nullable Observation parentObservation) {
 			return Observation.NOOP;
 		}
 
@@ -493,12 +493,12 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 			}
 
 			@Override
-			public Observation contextualName(String contextualName) {
+			public Observation contextualName(@Nullable String contextualName) {
 				return this.observation.contextualName(contextualName);
 			}
 
 			@Override
-			public Observation parentObservation(Observation parentObservation) {
+			public Observation parentObservation(@Nullable Observation parentObservation) {
 				return this.observation.parentObservation(parentObservation);
 			}
 
@@ -575,7 +575,7 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 
 		private final String filterSection;
 
-		private String filterName;
+		private @Nullable String filterName;
 
 		private int chainPosition;
 
@@ -597,7 +597,7 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 			return this.filterSection;
 		}
 
-		String getFilterName() {
+		@Nullable String getFilterName() {
 			return this.filterName;
 		}
 
@@ -677,12 +677,12 @@ public final class ObservationWebFilterChainDecorator implements WebFilterChainP
 		}
 
 		@Override
-		public Observation contextualName(String contextualName) {
+		public Observation contextualName(@Nullable String contextualName) {
 			return this.observation.contextualName(contextualName);
 		}
 
 		@Override
-		public Observation parentObservation(Observation parentObservation) {
+		public Observation parentObservation(@Nullable Observation parentObservation) {
 			return this.observation.parentObservation(parentObservation);
 		}
 

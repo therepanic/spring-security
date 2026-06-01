@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License. You may obtain a copy of
@@ -26,7 +26,7 @@ import org.gradle.api.Action;
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.plugins.JavaPluginConvention;
+import org.gradle.api.plugins.JavaPluginExtension;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.slf4j.Logger;
@@ -71,7 +71,7 @@ public class JavadocApiPlugin implements Plugin<Project> {
 		}
 
 		api.setMaxMemory("1024m");
-		api.setDestinationDir(new File(project.getBuildDir(), "api"));
+		api.setDestinationDir(project.layout.getBuildDirectory().dir("api").get().getAsFile());
 
 		project.getPluginManager().apply("io.spring.convention.javadoc-options");
 	}
@@ -99,7 +99,7 @@ public class JavadocApiPlugin implements Plugin<Project> {
 			public void execute(SpringModulePlugin plugin) {
 				logger.info("Added sources for {}", project);
 
-				JavaPluginConvention java = project.getConvention().getPlugin(JavaPluginConvention.class);
+				JavaPluginExtension java = project.getExtensions().getByType(JavaPluginExtension.class);
 				SourceSet mainSourceSet = java.getSourceSets().getByName("main");
 
 				api.setSource(api.getSource().plus(mainSourceSet.getAllJava()));

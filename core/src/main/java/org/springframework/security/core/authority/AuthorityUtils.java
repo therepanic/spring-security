@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ public final class AuthorityUtils {
 	 * @return a List of GrantedAuthority objects
 	 */
 	public static List<GrantedAuthority> createAuthorityList(String... authorities) {
+		Assert.notNull(authorities, "authorities cannot be null");
 		List<GrantedAuthority> grantedAuthorities = new ArrayList<>(authorities.length);
 		for (String authority : authorities) {
 			grantedAuthorities.add(new SimpleGrantedAuthority(authority));

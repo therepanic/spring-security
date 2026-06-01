@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,9 @@ public class DefaultOAuth2UserService implements OAuth2UserService<OAuth2UserReq
 		RequestEntity<?> request = this.requestEntityConverter.convert(userRequest);
 		ResponseEntity<Map<String, Object>> response = getResponse(userRequest, request);
 		OAuth2AccessToken token = userRequest.getAccessToken();
-		Map<String, Object> attributes = this.attributesConverter.convert(userRequest).convert(response.getBody());
+		Map<String, Object> body = response.getBody();
+		Assert.notNull(body, "userInfo response body cannot be null");
+		Map<String, Object> attributes = this.attributesConverter.convert(userRequest).convert(body);
 		Collection<GrantedAuthority> authorities = getAuthorities(token, attributes, userNameAttributeName);
 		return new DefaultOAuth2User(authorities, attributes, userNameAttributeName);
 	}

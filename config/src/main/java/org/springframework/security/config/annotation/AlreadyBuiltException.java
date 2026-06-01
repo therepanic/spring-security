@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package org.springframework.security.config.annotation;
 
 /**
- * Thrown when {@link AbstractSecurityBuilder#build()} is two or more times.
+ * Thrown when {@link SecurityBuilder#build()} is two or more times.
  *
  * @author Rob Winch
  * @since 3.2

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 package org.springframework.security.web.server.util.matcher;
 
+import java.util.List;
+
 import reactor.core.publisher.Mono;
 
-import org.springframework.security.web.util.matcher.IpAddressMatcher;
+import org.springframework.security.util.matcher.InetAddressMatcher;
+import org.springframework.security.util.matcher.InetAddressMatchers;
 import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
 
@@ -31,7 +34,7 @@ import org.springframework.web.server.ServerWebExchange;
  */
 public final class IpAddressServerWebExchangeMatcher implements ServerWebExchangeMatcher {
 
-	private final IpAddressMatcher ipAddressMatcher;
+	private final InetAddressMatcher ipAddressMatcher;
 
 	/**
 	 * Takes a specific IP address or a range specified using the IP/Netmask (e.g.
@@ -41,7 +44,7 @@ public final class IpAddressServerWebExchangeMatcher implements ServerWebExchang
 	 */
 	public IpAddressServerWebExchangeMatcher(String ipAddress) {
 		Assert.hasText(ipAddress, "IP address cannot be empty");
-		this.ipAddressMatcher = new IpAddressMatcher(ipAddress);
+		this.ipAddressMatcher = InetAddressMatchers.builder().includeAddresses(List.of(ipAddress)).build();
 	}
 
 	@Override

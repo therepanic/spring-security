@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,6 +185,7 @@ public final class DPoPProofJwtDecoderFactory implements JwtDecoderFactory<DPoPP
 			return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
 		}
 
+		@SuppressWarnings("serial")
 		private static final class JtiCache extends LinkedHashMap<String, Long> {
 
 			private static final int MAX_SIZE = 1000;

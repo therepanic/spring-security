@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import java.time.Instant;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.opensaml.saml.saml2.core.LogoutRequest;
 
 import org.springframework.core.convert.converter.Converter;
@@ -39,6 +41,7 @@ import org.springframework.util.Assert;
  * @author Gerhard Haege
  * @since 5.6
  */
+@NullMarked
 public final class OpenSaml5LogoutRequestResolver implements Saml2LogoutRequestResolver {
 
 	private final BaseOpenSamlLogoutRequestResolver delegate;
@@ -64,7 +67,7 @@ public final class OpenSaml5LogoutRequestResolver implements Saml2LogoutRequestR
 	 * {@inheritDoc}
 	 */
 	@Override
-	public Saml2LogoutRequest resolve(HttpServletRequest request, Authentication authentication) {
+	public @Nullable Saml2LogoutRequest resolve(HttpServletRequest request, Authentication authentication) {
 		return this.delegate.resolve(request, authentication);
 	}
 

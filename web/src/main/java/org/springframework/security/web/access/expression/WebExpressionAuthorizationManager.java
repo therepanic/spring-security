@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.web.access.expression;
 
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -83,7 +85,8 @@ public final class WebExpressionAuthorizationManager implements AuthorizationMan
 	 * expression
 	 */
 	@Override
-	public AuthorizationResult authorize(Supplier<Authentication> authentication, RequestAuthorizationContext context) {
+	public AuthorizationResult authorize(Supplier<? extends @Nullable Authentication> authentication,
+			RequestAuthorizationContext context) {
 		EvaluationContext ctx = this.expressionHandler.createEvaluationContext(authentication, context);
 		boolean granted = ExpressionUtils.evaluateAsBoolean(this.expression, ctx);
 		return new ExpressionAuthorizationDecision(granted, this.expression);

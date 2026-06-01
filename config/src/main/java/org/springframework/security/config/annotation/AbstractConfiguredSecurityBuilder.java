@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import org.springframework.web.filter.DelegatingFilterProxy;
  * @param <O> The object that this builder returns
  * @param <B> The type of this builder (that is returned by the base class)
  * @author Rob Winch
+ * @author DingHao
  * @see WebSecurity
  */
 public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBuilder<O>>
@@ -59,7 +60,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 
 	private final LinkedHashMap<Class<? extends SecurityConfigurer<O, B>>, List<SecurityConfigurer<O, B>>> configurers = new LinkedHashMap<>();
 
-	private final List<SecurityConfigurer<O, B>> configurersAddedInInitializing = new ArrayList<>();
+	private List<SecurityConfigurer<O, B>> configurersAddedInInitializing = new ArrayList<>();
 
 	private final Map<Class<?>, Object> sharedObjects = new HashMap<>();
 
@@ -95,10 +96,10 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	}
 
 	/**
-	 * Similar to {@link #build()} and {@link #getObject()} but checks the state to
-	 * determine if {@link #build()} needs to be called first.
-	 * @return the result of {@link #build()} or {@link #getObject()}. If an error occurs
-	 * while building, returns null.
+	 * Similar to {@link SecurityBuilder#build()} and {@link #getObject()} but checks the
+	 * state to determine if {@link SecurityBuilder#build()} needs to be called first.
+	 * @return the result of {@link SecurityBuilder#build()} or {@link #getObject()}. If
+	 * an error occurs while building, returns null.
 	 */
 	public O getOrBuild() {
 		if (!isUnbuilt()) {
@@ -121,7 +122,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 * @return the {@link SecurityConfigurerAdapter} for further customizations
 	 * @throws Exception
 	 */
-	public <C extends SecurityConfigurer<O, B>> C apply(C configurer) throws Exception {
+	public <C extends SecurityConfigurer<O, B>> C apply(C configurer) {
 		add(configurer);
 		return configurer;
 	}
@@ -144,7 +145,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 * @throws Exception
 	 * @since 7.0
 	 */
-	public <C extends SecurityConfigurerAdapter<O, B>> B with(C configurer) throws Exception {
+	public <C extends SecurityConfigurerAdapter<O, B>> B with(C configurer) {
 		return with(configurer, Customizer.withDefaults());
 	}
 
@@ -157,7 +158,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 * @since 6.2
 	 */
 	@SuppressWarnings("unchecked")
-	public <C extends SecurityConfigurerAdapter<O, B>> B with(C configurer, Customizer<C> customizer) throws Exception {
+	public <C extends SecurityConfigurerAdapter<O, B>> B with(C configurer, Customizer<C> customizer) {
 		configurer.addObjectPostProcessor(this.objectPostProcessor);
 		configurer.setBuilder((B) this);
 		add(configurer);
@@ -176,7 +177,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	}
 
 	/**
-	 * Gets a shared Object. Note that object heirarchies are not considered.
+	 * Gets a shared Object. Note that object hierarchies are not considered.
 	 * @param sharedType the type of the shared Object
 	 * @return the shared Object or null if it is not found
 	 */
@@ -325,7 +326,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 * </ul>
 	 */
 	@Override
-	protected final O doBuild() throws Exception {
+	protected final O doBuild() {
 		synchronized (this.configurers) {
 			this.buildState = BuildState.INITIALIZING;
 			beforeInit();
@@ -345,7 +346,7 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 * method. Subclasses may override this method to hook into the lifecycle without
 	 * using a {@link SecurityConfigurer}.
 	 */
-	protected void beforeInit() throws Exception {
+	protected void beforeInit() {
 	}
 
 	/**
@@ -354,28 +355,32 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	 * override this method to hook into the lifecycle without using a
 	 * {@link SecurityConfigurer}.
 	 */
-	protected void beforeConfigure() throws Exception {
+	protected void beforeConfigure() {
 	}
 
 	/**
 	 * Subclasses must implement this method to build the object that is being returned.
-	 * @return the Object to be buit or null if the implementation allows it
+	 * @return the Object to be built or null if the implementation allows it
 	 */
-	protected abstract O performBuild() throws Exception;
+	protected abstract O performBuild();
 
 	@SuppressWarnings("unchecked")
-	private void init() throws Exception {
+	private void init() {
 		Collection<SecurityConfigurer<O, B>> configurers = getConfigurers();
 		for (SecurityConfigurer<O, B> configurer : configurers) {
 			configurer.init((B) this);
 		}
-		for (SecurityConfigurer<O, B> configurer : this.configurersAddedInInitializing) {
-			configurer.init((B) this);
+		while (!this.configurersAddedInInitializing.isEmpty()) {
+			List<SecurityConfigurer<O, B>> toInit = this.configurersAddedInInitializing;
+			this.configurersAddedInInitializing = new ArrayList<>();
+			for (SecurityConfigurer<O, B> configurer : toInit) {
+				configurer.init((B) this);
+			}
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	private void configure() throws Exception {
+	private void configure() {
 		Collection<SecurityConfigurer<O, B>> configurers = getConfigurers();
 		for (SecurityConfigurer<O, B> configurer : configurers) {
 			configurer.configure((B) this);
@@ -409,13 +414,13 @@ public abstract class AbstractConfiguredSecurityBuilder<O, B extends SecurityBui
 	private enum BuildState {
 
 		/**
-		 * This is the state before the {@link Builder#build()} is invoked
+		 * This is the state before the {@link SecurityBuilder#build()} is invoked
 		 */
 		UNBUILT(0),
 
 		/**
-		 * The state from when {@link Builder#build()} is first invoked until all the
-		 * {@link SecurityConfigurer#init(SecurityBuilder)} methods have been invoked.
+		 * The state from when {@link SecurityBuilder#build()} is first invoked until all
+		 * the {@link SecurityConfigurer#init(SecurityBuilder)} methods have been invoked.
 		 */
 		INITIALIZING(1),
 

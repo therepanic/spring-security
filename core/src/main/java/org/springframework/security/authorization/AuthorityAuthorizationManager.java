@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.security.authorization;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.access.hierarchicalroles.NullRoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.core.Authentication;
@@ -31,6 +33,7 @@ import org.springframework.util.Assert;
  * @param <T> the type of object being authorized.
  * @author Evgeniy Cheban
  * @since 5.5
+ * @see AllAuthoritiesAuthorizationManager
  */
 public final class AuthorityAuthorizationManager<T> implements AuthorizationManager<T> {
 
@@ -137,7 +140,7 @@ public final class AuthorityAuthorizationManager<T> implements AuthorizationMana
 	 * {@inheritDoc}
 	 */
 	@Override
-	public AuthorizationResult authorize(Supplier<Authentication> authentication, T object) {
+	public AuthorizationResult authorize(Supplier<? extends @Nullable Authentication> authentication, T object) {
 		return this.delegate.authorize(authentication, this.authorities);
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.SecurityAssertions;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.ObjectPostProcessor;
@@ -44,7 +45,6 @@ import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.PasswordEncodedUser;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
@@ -107,8 +107,7 @@ public class AuthenticationManagerBuilderTests {
 			.getAuthenticationManager();
 		Authentication auth = manager
 			.authenticate(UsernamePasswordAuthenticationToken.unauthenticated("user", "password"));
-		assertThat(auth.getName()).isEqualTo("user");
-		assertThat(auth.getAuthorities()).extracting(GrantedAuthority::getAuthority).containsOnly("ROLE_USER");
+		SecurityAssertions.assertThat(auth).name("user").hasAuthority("ROLE_USER");
 	}
 
 	@Test
@@ -119,8 +118,7 @@ public class AuthenticationManagerBuilderTests {
 			.getAuthenticationManager();
 		Authentication auth = manager
 			.authenticate(UsernamePasswordAuthenticationToken.unauthenticated("user", "password"));
-		assertThat(auth.getName()).isEqualTo("user");
-		assertThat(auth.getAuthorities()).extracting(GrantedAuthority::getAuthority).containsOnly("ROLE_USER");
+		SecurityAssertions.assertThat(auth).name("user").hasAuthority("ROLE_USER");
 	}
 
 	@Test

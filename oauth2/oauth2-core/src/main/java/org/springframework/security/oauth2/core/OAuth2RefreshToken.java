@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.oauth2.core;
 
 import java.io.Serial;
 import java.time.Instant;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * An implementation of an {@link AbstractOAuth2Token} representing an OAuth 2.0 Refresh
@@ -43,20 +45,20 @@ public class OAuth2RefreshToken extends AbstractOAuth2Token {
 	/**
 	 * Constructs an {@code OAuth2RefreshToken} using the provided parameters.
 	 * @param tokenValue the token value
-	 * @param issuedAt the time at which the token was issued
+	 * @param issuedAt the time at which the token was issued, may be {@code null}
 	 */
-	public OAuth2RefreshToken(String tokenValue, Instant issuedAt) {
+	public OAuth2RefreshToken(String tokenValue, @Nullable Instant issuedAt) {
 		this(tokenValue, issuedAt, null);
 	}
 
 	/**
 	 * Constructs an {@code OAuth2RefreshToken} using the provided parameters.
 	 * @param tokenValue the token value
-	 * @param issuedAt the time at which the token was issued
-	 * @param expiresAt the time at which the token expires
+	 * @param issuedAt the time at which the token was issued, may be {@code null}
+	 * @param expiresAt the time at which the token expires, may be {@code null}
 	 * @since 5.5
 	 */
-	public OAuth2RefreshToken(String tokenValue, Instant issuedAt, Instant expiresAt) {
+	public OAuth2RefreshToken(String tokenValue, @Nullable Instant issuedAt, @Nullable Instant expiresAt) {
 		super(tokenValue, issuedAt, expiresAt);
 	}
 

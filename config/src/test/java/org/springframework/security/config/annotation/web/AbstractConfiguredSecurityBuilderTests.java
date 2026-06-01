@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -163,13 +163,43 @@ public class AbstractConfiguredSecurityBuilderTests {
 		assertThat(this.builder.getConfigurers(TestSecurityConfigurer.class)).hasSize(1);
 	}
 
+	@Test
+	public void withWhenConfigurerAddInitializing() throws Exception {
+		this.builder.with(new AppliesNestedConfigurer(), Customizer.withDefaults());
+		assertThat(this.builder.build()).isEqualTo("success");
+	}
+
+	private static class AppliesNestedConfigurer
+			extends SecurityConfigurerAdapter<Object, TestConfiguredSecurityBuilder> {
+
+		@Override
+		public void init(TestConfiguredSecurityBuilder builder) {
+			builder.with(new NestedConfigurer(), Customizer.withDefaults());
+		}
+
+	}
+
+	private static class NestedConfigurer extends SecurityConfigurerAdapter<Object, TestConfiguredSecurityBuilder> {
+
+		@Override
+		public void init(TestConfiguredSecurityBuilder http) {
+			http.with(new DoubleNestedConfigurer(), Customizer.withDefaults());
+		}
+
+	}
+
+	private static class DoubleNestedConfigurer
+			extends SecurityConfigurerAdapter<Object, TestConfiguredSecurityBuilder> {
+
+	}
+
 	private static class ApplyAndRemoveSecurityConfigurer
 			extends SecurityConfigurerAdapter<Object, TestConfiguredSecurityBuilder> {
 
 		private static SecurityConfigurer<Object, TestConfiguredSecurityBuilder> CONFIGURER;
 
 		@Override
-		public void init(TestConfiguredSecurityBuilder builder) throws Exception {
+		public void init(TestConfiguredSecurityBuilder builder) {
 			builder.apply(CONFIGURER);
 			builder.removeConfigurer(CONFIGURER.getClass());
 		}
@@ -182,7 +212,7 @@ public class AbstractConfiguredSecurityBuilderTests {
 		private static SecurityConfigurer<Object, TestConfiguredSecurityBuilder> CONFIGURER;
 
 		@Override
-		public void init(TestConfiguredSecurityBuilder builder) throws Exception {
+		public void init(TestConfiguredSecurityBuilder builder) {
 			builder.apply(CONFIGURER);
 			builder.removeConfigurers(CONFIGURER.getClass());
 		}
@@ -195,7 +225,7 @@ public class AbstractConfiguredSecurityBuilderTests {
 		private static SecurityConfigurer<Object, TestConfiguredSecurityBuilder> CONFIGURER;
 
 		@Override
-		public void init(TestConfiguredSecurityBuilder builder) throws Exception {
+		public void init(TestConfiguredSecurityBuilder builder) {
 			builder.apply(CONFIGURER);
 		}
 

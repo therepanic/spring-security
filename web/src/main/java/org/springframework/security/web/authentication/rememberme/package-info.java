@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,4 +21,7 @@
  * "https://docs.spring.io/spring-security/site/docs/3.0.x/reference/remember-me.html">Remember-Me
  * Authentication</a> chapter of the reference manual.
  */
+@NullMarked
 package org.springframework.security.web.authentication.rememberme;
+
+import org.jspecify.annotations.NullMarked;

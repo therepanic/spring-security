@@ -1,5 +1,5 @@
 /*
- * Copyright 2012-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.web.access.expression;
 
 import java.util.List;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.expression.BeanResolver;
 import org.springframework.expression.ConstructorResolver;
@@ -84,17 +86,17 @@ class DelegatingEvaluationContext implements EvaluationContext {
 	}
 
 	@Override
-	public BeanResolver getBeanResolver() {
+	public @Nullable BeanResolver getBeanResolver() {
 		return this.delegate.getBeanResolver();
 	}
 
 	@Override
-	public void setVariable(String name, Object value) {
+	public void setVariable(String name, @Nullable Object value) {
 		this.delegate.setVariable(name, value);
 	}
 
 	@Override
-	public Object lookupVariable(String name) {
+	public @Nullable Object lookupVariable(String name) {
 		return this.delegate.lookupVariable(name);
 	}
 

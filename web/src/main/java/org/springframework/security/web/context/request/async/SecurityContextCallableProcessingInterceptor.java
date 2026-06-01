@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.web.context.request.async;
 
 import java.util.concurrent.Callable;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -42,7 +44,7 @@ import org.springframework.web.context.request.async.CallableProcessingIntercept
  */
 public final class SecurityContextCallableProcessingInterceptor implements CallableProcessingInterceptor {
 
-	private volatile SecurityContext securityContext;
+	private @Nullable volatile SecurityContext securityContext;
 
 	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
 		.getContextHolderStrategy();
@@ -77,11 +79,13 @@ public final class SecurityContextCallableProcessingInterceptor implements Calla
 
 	@Override
 	public <T> void preProcess(NativeWebRequest request, Callable<T> task) {
-		this.securityContextHolderStrategy.setContext(this.securityContext);
+		if (this.securityContext != null) {
+			this.securityContextHolderStrategy.setContext(this.securityContext);
+		}
 	}
 
 	@Override
-	public <T> void postProcess(NativeWebRequest request, Callable<T> task, Object concurrentResult) {
+	public <T> void postProcess(NativeWebRequest request, Callable<T> task, @Nullable Object concurrentResult) {
 		this.securityContextHolderStrategy.clearContext();
 	}
 

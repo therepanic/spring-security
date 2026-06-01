@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.oauth2.client.web;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 
@@ -41,7 +42,7 @@ public interface OAuth2AuthorizationRequestResolver {
 	 * @return the resolved {@link OAuth2AuthorizationRequest} or {@code null} if not
 	 * available
 	 */
-	OAuth2AuthorizationRequest resolve(HttpServletRequest request);
+	@Nullable OAuth2AuthorizationRequest resolve(HttpServletRequest request);
 
 	/**
 	 * Returns the {@link OAuth2AuthorizationRequest} resolved from the provided
@@ -51,6 +52,6 @@ public interface OAuth2AuthorizationRequestResolver {
 	 * @return the resolved {@link OAuth2AuthorizationRequest} or {@code null} if not
 	 * available
 	 */
-	OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId);
+	@Nullable OAuth2AuthorizationRequest resolve(HttpServletRequest request, String clientRegistrationId);
 
 }

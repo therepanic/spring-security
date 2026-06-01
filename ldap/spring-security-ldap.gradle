@@ -1,8 +1,7 @@
 apply plugin: 'io.spring.convention.spring-module'
-
-configurations {
-	unboundid7 { extendsFrom(optional, tests) }
-}
+apply plugin: 'javadoc-warnings-error'
+apply plugin: 'compile-warnings-error'
+apply plugin: 'security-nullability'
 
 dependencies {
 	management platform(project(":spring-security-dependencies"))
@@ -15,6 +14,7 @@ dependencies {
 	optional 'com.fasterxml.jackson.core:jackson-databind'
 	optional 'ldapsdk:ldapsdk'
 	optional "com.unboundid:unboundid-ldapsdk"
+	optional 'tools.jackson.core:jackson-databind'
 	api ('org.springframework.ldap:spring-ldap-core') {
 		exclude(group: 'commons-logging', module: 'commons-logging')
 		exclude(group: 'org.springframework', module: 'spring-beans')
@@ -23,7 +23,8 @@ dependencies {
 		exclude(group: 'org.springframework.data', module: 'spring-data-commons')
 	}
 
-	testImplementation project(':spring-security-test')
+	testImplementation project(path : ':spring-security-core', configuration : 'tests')
+	testImplementation project(":spring-security-test")
 	testImplementation 'org.slf4j:slf4j-api'
 	testImplementation "org.assertj:assertj-core"
 	testImplementation "org.junit.jupiter:junit-jupiter-api"
@@ -34,21 +35,10 @@ dependencies {
 	testImplementation "org.springframework:spring-test"
 	testImplementation 'org.skyscreamer:jsonassert'
 
-	unboundid7 libs.com.unboundid.unboundid.ldapsdk7
-
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 integrationTest {
 //	  exclude('**/OpenLDAPIntegrationTestSuite.class')
 	maxParallelForks = 1
-}
-
-tasks.register("unboundid7Test", Test) {
-	useJUnitPlatform()
-	classpath = sourceSets.test.output + sourceSets.main.output + configurations.unboundid7
-}
-
-tasks.named("check") {
-	dependsOn unboundid7Test
 }

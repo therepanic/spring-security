@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,9 +112,9 @@ public class OAuth2ClientBeanDefinitionParserTests {
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		// @formatter:on
-		assertThat(result.getResponse().getRedirectedUrl()).matches(
-				"https://accounts.google.com/o/oauth2/v2/auth\\?" + "response_type=code&client_id=google-client-id&"
-						+ "scope=scope1%20scope2&state=.{15,}&redirect_uri=http://localhost/callback/google");
+		assertThat(result.getResponse().getRedirectedUrl()).matches("https://accounts.google.com/o/oauth2/v2/auth\\?"
+				+ "response_type=code&client_id=google-client-id&"
+				+ "scope=scope1%20scope2&state=.{15,}&redirect_uri=http://localhost/callback/google&code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256");
 	}
 
 	@Test
@@ -134,9 +134,9 @@ public class OAuth2ClientBeanDefinitionParserTests {
 				.andExpect(status().is3xxRedirection())
 				.andReturn();
 		// @formatter:on
-		assertThat(result.getResponse().getRedirectedUrl()).matches(
-				"https://accounts.google.com/o/oauth2/v2/auth\\?" + "response_type=code&client_id=google-client-id&"
-						+ "scope=scope1%20scope2&state=.{15,}&redirect_uri=http://localhost/callback/google");
+		assertThat(result.getResponse().getRedirectedUrl()).matches("https://accounts.google.com/o/oauth2/v2/auth\\?"
+				+ "response_type=code&client_id=google-client-id&"
+				+ "scope=scope1%20scope2&state=.{15,}&redirect_uri=http://localhost/callback/google&code_challenge=([a-zA-Z0-9\\-\\.\\_\\~]){43}&code_challenge_method=S256");
 		verify(this.clientRegistrationRepository).findByRegistrationId(any());
 	}
 

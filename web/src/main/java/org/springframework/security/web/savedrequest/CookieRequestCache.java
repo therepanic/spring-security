@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.web.savedrequest;
 
 import java.util.Base64;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import jakarta.servlet.http.Cookie;
@@ -25,6 +26,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.web.util.UrlUtils;
 import org.springframework.security.web.util.matcher.AnyRequestMatcher;
@@ -72,7 +74,7 @@ public class CookieRequestCache implements RequestCache {
 	}
 
 	@Override
-	public SavedRequest getRequest(HttpServletRequest request, HttpServletResponse response) {
+	public @Nullable SavedRequest getRequest(HttpServletRequest request, HttpServletResponse response) {
 		Cookie savedRequestCookie = WebUtils.getCookie(request, COOKIE_NAME);
 		if (savedRequestCookie == null) {
 			return null;
@@ -91,6 +93,7 @@ public class CookieRequestCache implements RequestCache {
 			.setServerPort(port)
 			.setMethod(request.getMethod())
 			.setLocales(Collections.list(request.getLocales()))
+			.setParameters(request.getParameterMap())
 			.build();
 	}
 
@@ -106,14 +109,15 @@ public class CookieRequestCache implements RequestCache {
 	}
 
 	@Override
-	public HttpServletRequest getMatchingRequest(HttpServletRequest request, HttpServletResponse response) {
-		SavedRequest saved = this.getRequest(request, response);
+	public @Nullable HttpServletRequest getMatchingRequest(HttpServletRequest request, HttpServletResponse response) {
+		@Nullable SavedRequest saved = this.getRequest(request, response);
 		if (!this.matchesSavedRequest(request, saved)) {
 			this.logger.debug("saved request doesn't match");
 			return null;
 		}
 		this.removeRequest(request, response);
-		return new SavedRequestAwareWrapper(saved, request);
+		// we know that saved is non-null because matchesSavedRequest = true
+		return new SavedRequestAwareWrapper(Objects.requireNonNull(saved), request);
 	}
 
 	@Override
@@ -130,7 +134,7 @@ public class CookieRequestCache implements RequestCache {
 		return Base64.getEncoder().encodeToString(cookieValue.getBytes());
 	}
 
-	private String decodeCookie(String encodedCookieValue) {
+	private @Nullable String decodeCookie(String encodedCookieValue) {
 		try {
 			return new String(Base64.getDecoder().decode(encodedCookieValue.getBytes()));
 		}
@@ -145,7 +149,7 @@ public class CookieRequestCache implements RequestCache {
 		return (StringUtils.hasLength(contextPath)) ? contextPath : "/";
 	}
 
-	private boolean matchesSavedRequest(HttpServletRequest request, SavedRequest savedRequest) {
+	private boolean matchesSavedRequest(HttpServletRequest request, @Nullable SavedRequest savedRequest) {
 		if (savedRequest == null) {
 			return false;
 		}

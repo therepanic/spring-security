@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ public class HttpBasicConfigurerTests {
 		// @formatter:off
 		this.mvc.perform(get("/"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(header().string("WWW-Authenticate", "Basic realm=\"Realm\""));
+				.andExpect(header().string("WWW-Authenticate", "Basic realm=\"Realm\", charset=\"UTF-8\""));
 		// @formatter:on
 	}
 
@@ -114,7 +114,7 @@ public class HttpBasicConfigurerTests {
 		// @formatter:off
 		this.mvc.perform(get("/"))
 				.andExpect(status().isUnauthorized())
-				.andExpect(header().string("WWW-Authenticate", "Basic realm=\"Realm\""));
+				.andExpect(header().string("WWW-Authenticate", "Basic realm=\"Realm\", charset=\"UTF-8\""));
 		// @formatter:on
 	}
 

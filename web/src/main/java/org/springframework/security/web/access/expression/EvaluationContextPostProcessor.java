@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2015 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ interface EvaluationContextPostProcessor<I> {
 	 * that was passed in.
 	 * @param context the original {@link EvaluationContext}
 	 * @param invocation the security invocation object (i.e. FilterInvocation)
-	 * @return the upated context.
+	 * @return the updated context.
 	 */
 	EvaluationContext postProcess(EvaluationContext context, I invocation);
 

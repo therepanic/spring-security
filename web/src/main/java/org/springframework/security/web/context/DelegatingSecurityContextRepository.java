@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.springframework.security.core.context.DeferredSecurityContext;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.Assert;
 
 /**
@@ -51,7 +52,7 @@ public final class DelegatingSecurityContextRepository implements SecurityContex
 	@Override
 	@Deprecated
 	public SecurityContext loadContext(HttpRequestResponseHolder requestResponseHolder) {
-		SecurityContext result = null;
+		SecurityContext result = SecurityContextHolder.createEmptyContext();
 		for (SecurityContextRepository delegate : this.delegates) {
 			SecurityContext delegateResult = delegate.loadContext(requestResponseHolder);
 			if (result == null || delegate.containsContext(requestResponseHolder.getRequest())) {
@@ -72,6 +73,9 @@ public final class DelegatingSecurityContextRepository implements SecurityContex
 				DeferredSecurityContext next = delegate.loadDeferredContext(request);
 				deferredSecurityContext = new DelegatingDeferredSecurityContext(deferredSecurityContext, next);
 			}
+		}
+		if (deferredSecurityContext == null) {
+			throw new IllegalStateException("No deferredSecurityContext found");
 		}
 		return deferredSecurityContext;
 	}

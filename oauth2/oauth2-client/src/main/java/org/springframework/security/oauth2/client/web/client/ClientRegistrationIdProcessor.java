@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import java.lang.reflect.Method;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.MethodParameter;
-import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.security.core.annotation.SecurityAnnotationScanner;
+import org.springframework.security.core.annotation.SecurityAnnotationScanners;
 import org.springframework.security.oauth2.client.annotation.ClientRegistrationId;
 import org.springframework.security.oauth2.client.web.ClientAttributes;
 import org.springframework.web.service.invoker.HttpRequestValues;
@@ -37,10 +38,14 @@ public final class ClientRegistrationIdProcessor implements HttpRequestValues.Pr
 
 	public static ClientRegistrationIdProcessor DEFAULT_INSTANCE = new ClientRegistrationIdProcessor();
 
+	private SecurityAnnotationScanner<ClientRegistrationId> securityAnnotationScanner = SecurityAnnotationScanners
+		.requireUnique(ClientRegistrationId.class);
+
 	@Override
 	public void process(Method method, MethodParameter[] parameters, @Nullable Object[] arguments,
 			HttpRequestValues.Builder builder) {
-		ClientRegistrationId registeredId = AnnotationUtils.findAnnotation(method, ClientRegistrationId.class);
+		ClientRegistrationId registeredId = this.securityAnnotationScanner.scan(method, method.getDeclaringClass());
+
 		if (registeredId != null) {
 			String registrationId = registeredId.registrationId();
 			builder.configureAttributes(ClientAttributes.clientRegistrationId(registrationId));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.saml2.provider.service.web.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.saml2.provider.service.authentication.AbstractSaml2AuthenticationRequest;
 
@@ -31,6 +32,6 @@ public interface Saml2AuthenticationRequestResolver {
 
 	String DEFAULT_AUTHENTICATION_REQUEST_URI = "/saml2/authenticate/{registrationId}";
 
-	<T extends AbstractSaml2AuthenticationRequest> T resolve(HttpServletRequest request);
+	<T extends AbstractSaml2AuthenticationRequest> @Nullable T resolve(HttpServletRequest request);
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,22 @@ public class SubjectX500PrincipalExtractorTests {
 		Object principal = this.extractor.extractPrincipal(X509TestUtils.buildTestCertificateWithCnAtEnd());
 
 		assertThat(principal).isEqualTo("Duke");
+	}
+
+	@Test
+	void extractWhenDnEmbeddedInCnThenExtractsPrincipalName() throws Exception {
+		Object principal = this.extractor.extractPrincipal(X509TestUtils.buildTestCertficateWithEmbeddedDn());
+
+		assertThat(principal).isEqualTo("luke");
+	}
+
+	@Test
+	void extractWhenEmailDnEmbeddedInCnThenExtractsEmail() throws Exception {
+		this.extractor.setExtractPrincipalNameFromEmail(true);
+
+		Object principal = this.extractor.extractPrincipal(X509TestUtils.buildTestCertficateWithEmbeddedEmailDn());
+
+		assertThat(principal).isEqualTo("luke@monkeymachine");
 	}
 
 	@Test

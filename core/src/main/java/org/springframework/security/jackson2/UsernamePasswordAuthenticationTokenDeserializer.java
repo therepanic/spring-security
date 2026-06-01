@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.MissingNode;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -47,7 +48,12 @@ import org.springframework.security.core.GrantedAuthority;
  * @author Onur Kagan Ozcan
  * @since 4.2
  * @see UsernamePasswordAuthenticationTokenMixin
+ * @deprecated as of 7.0 in favor of
+ * {@code org.springframework.security.jackson.UsernamePasswordAuthenticationTokenDeserializer}
+ * based on Jackson 3
  */
+@SuppressWarnings("removal")
+@Deprecated(forRemoval = true)
 class UsernamePasswordAuthenticationTokenDeserializer extends JsonDeserializer<UsernamePasswordAuthenticationToken> {
 
 	private static final TypeReference<List<GrantedAuthority>> GRANTED_AUTHORITY_LIST = new TypeReference<>() {
@@ -70,7 +76,7 @@ class UsernamePasswordAuthenticationTokenDeserializer extends JsonDeserializer<U
 			throws IOException, JsonProcessingException {
 		ObjectMapper mapper = (ObjectMapper) jp.getCodec();
 		JsonNode jsonNode = mapper.readTree(jp);
-		Boolean authenticated = readJsonNode(jsonNode, "authenticated").asBoolean();
+		boolean authenticated = readJsonNode(jsonNode, "authenticated").asBoolean();
 		JsonNode principalNode = readJsonNode(jsonNode, "principal");
 		Object principal = getPrincipal(mapper, principalNode);
 		JsonNode credentialsNode = readJsonNode(jsonNode, "credentials");
@@ -91,7 +97,7 @@ class UsernamePasswordAuthenticationTokenDeserializer extends JsonDeserializer<U
 		return token;
 	}
 
-	private Object getCredentials(JsonNode credentialsNode) {
+	private @Nullable Object getCredentials(JsonNode credentialsNode) {
 		if (credentialsNode.isNull() || credentialsNode.isMissingNode()) {
 			return null;
 		}

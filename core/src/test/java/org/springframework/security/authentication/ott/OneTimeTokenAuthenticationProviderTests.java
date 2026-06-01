@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.SecurityAssertions;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -69,8 +72,7 @@ public class OneTimeTokenAuthenticationProviderTests {
 			.willReturn(new User(USERNAME, PASSWORD, List.of()));
 		OneTimeTokenAuthenticationToken token = new OneTimeTokenAuthenticationToken(TOKEN);
 
-		OneTimeTokenAuthenticationToken authentication = (OneTimeTokenAuthenticationToken) this.provider
-			.authenticate(token);
+		Authentication authentication = this.provider.authenticate(token);
 
 		User user = (User) authentication.getPrincipal();
 		assertThat(authentication.isAuthenticated()).isTrue();
@@ -96,6 +98,18 @@ public class OneTimeTokenAuthenticationProviderTests {
 		OneTimeTokenAuthenticationToken token = new OneTimeTokenAuthenticationToken(TOKEN);
 
 		assertThatExceptionOfType(BadCredentialsException.class).isThrownBy(() -> this.provider.authenticate(token));
+	}
+
+	@Test
+	void authenticateWhenSuccessThenIssuesFactor() {
+		given(this.oneTimeTokenService.consume(any()))
+			.willReturn(new DefaultOneTimeToken(TOKEN, USERNAME, Instant.now().plusSeconds(120)));
+		given(this.userDetailsService.loadUserByUsername(anyString()))
+			.willReturn(new User(USERNAME, PASSWORD, List.of()));
+		OneTimeTokenAuthenticationToken token = new OneTimeTokenAuthenticationToken(TOKEN);
+
+		Authentication authentication = this.provider.authenticate(token);
+		SecurityAssertions.assertThat(authentication).hasAuthority(FactorGrantedAuthority.OTT_AUTHORITY);
 	}
 
 	@Test

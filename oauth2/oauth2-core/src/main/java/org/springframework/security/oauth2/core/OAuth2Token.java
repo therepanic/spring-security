@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.springframework.security.oauth2.core;
 
 import java.time.Instant;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Core interface representing an OAuth 2.0 Token.
@@ -39,8 +39,7 @@ public interface OAuth2Token {
 	 * Returns the time at which the token was issued.
 	 * @return the time the token was issued or {@code null}
 	 */
-	@Nullable
-	default Instant getIssuedAt() {
+	default @Nullable Instant getIssuedAt() {
 		return null;
 	}
 
@@ -48,8 +47,7 @@ public interface OAuth2Token {
 	 * Returns the expiration time on or after which the token MUST NOT be accepted.
 	 * @return the token expiration time or {@code null}
 	 */
-	@Nullable
-	default Instant getExpiresAt() {
+	default @Nullable Instant getExpiresAt() {
 		return null;
 	}
 

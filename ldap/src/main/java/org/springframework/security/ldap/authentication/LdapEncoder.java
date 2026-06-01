@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.ldap.authentication;
 
 import java.util.Locale;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Helper class to encode and decode ldap names and values.
  *
@@ -31,7 +33,7 @@ import java.util.Locale;
  */
 final class LdapEncoder {
 
-	private static final String[] NAME_ESCAPE_TABLE = new String[96];
+	private static final @Nullable String[] NAME_ESCAPE_TABLE = new String[96];
 	static {
 		// all below 0x20 (control chars)
 		for (char c = 0; c < ' '; c++) {
@@ -76,9 +78,6 @@ final class LdapEncoder {
 	 * @return The escaped value.
 	 */
 	static String nameEncode(String value) {
-		if (value == null) {
-			return null;
-		}
 		StringBuilder encodedValue = new StringBuilder(value.length() * 2);
 		int length = value.length();
 		int last = length - 1;

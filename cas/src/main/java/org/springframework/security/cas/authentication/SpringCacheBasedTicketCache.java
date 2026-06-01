@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.cas.authentication;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.cache.Cache;
 import org.springframework.core.log.LogMessage;
@@ -42,7 +43,7 @@ public class SpringCacheBasedTicketCache implements StatelessTicketCache {
 	}
 
 	@Override
-	public CasAuthenticationToken getByTicketId(final String serviceTicket) {
+	public @Nullable CasAuthenticationToken getByTicketId(final String serviceTicket) {
 		final Cache.ValueWrapper element = (serviceTicket != null) ? this.cache.get(serviceTicket) : null;
 		logger.debug(LogMessage.of(() -> "Cache hit: " + (element != null) + "; service ticket: " + serviceTicket));
 		return (element != null) ? (CasAuthenticationToken) element.get() : null;

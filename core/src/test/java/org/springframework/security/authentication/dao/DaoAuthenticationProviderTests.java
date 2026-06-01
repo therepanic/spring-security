@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import org.springframework.cache.Cache;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -31,6 +32,7 @@ import org.springframework.security.authentication.CredentialsExpiredException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.LockedException;
+import org.springframework.security.authentication.SecurityAssertions;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.password.CompromisedPasswordChecker;
@@ -39,9 +41,11 @@ import org.springframework.security.authentication.password.CompromisedPasswordE
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.userdetails.PasswordEncodedUser;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsChecker;
 import org.springframework.security.core.userdetails.UserDetailsPasswordService;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -62,6 +66,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -176,8 +181,8 @@ public class DaoAuthenticationProviderTests {
 	public void testAuthenticateFailsWithInvalidUsernameAndHideUserNotFoundExceptionsWithDefaultOfTrue() {
 		UsernamePasswordAuthenticationToken token = UsernamePasswordAuthenticationToken.unauthenticated("INVALID_USER",
 				"koala");
-		assertThat(createProvider(null).isHideUserNotFoundExceptions()).isTrue();
 		DaoAuthenticationProvider provider = createProvider(new MockUserDetailsServiceUserRod());
+		assertThat(provider.isHideUserNotFoundExceptions()).isTrue();
 		provider.setUserCache(new MockUserCache());
 		assertThatExceptionOfType(BadCredentialsException.class).isThrownBy(() -> provider.authenticate(token));
 	}
@@ -186,8 +191,8 @@ public class DaoAuthenticationProviderTests {
 	public void testAuthenticateFailsWithInvalidUsernameAndChangePasswordEncoder() {
 		UsernamePasswordAuthenticationToken token = UsernamePasswordAuthenticationToken.unauthenticated("INVALID_USER",
 				"koala");
-		assertThat(createProvider(null).isHideUserNotFoundExceptions()).isTrue();
 		DaoAuthenticationProvider provider = createProvider(new MockUserDetailsServiceUserRod());
+		assertThat(provider.isHideUserNotFoundExceptions()).isTrue();
 		provider.setUserCache(new MockUserCache());
 		assertThatExceptionOfType(BadCredentialsException.class).isThrownBy(() -> provider.authenticate(token));
 		provider.setPasswordEncoder(PasswordEncoderFactories.createDelegatingPasswordEncoder());
@@ -319,7 +324,7 @@ public class DaoAuthenticationProviderTests {
 
 	@Test
 	public void testGettersSetters() {
-		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(null);
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(new MockUserDetailsServiceUserRod());
 		provider.setPasswordEncoder(new BCryptPasswordEncoder());
 		assertThat(provider.getPasswordEncoder().getClass()).isEqualTo(BCryptPasswordEncoder.class);
 		provider.setUserCache(new SpringCacheBasedUserCache(mock(Cache.class)));
@@ -351,12 +356,6 @@ public class DaoAuthenticationProviderTests {
 	}
 
 	@Test
-	public void testStartupFailsIfNoAuthenticationDao() throws Exception {
-		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(null);
-		assertThatIllegalArgumentException().isThrownBy(provider::afterPropertiesSet);
-	}
-
-	@Test
 	public void testStartupFailsIfNoUserCacheSet() throws Exception {
 		DaoAuthenticationProvider provider = createProvider(new MockUserDetailsServiceUserRod());
 		assertThat(provider.getUserCache().getClass()).isEqualTo(NullUserCache.class);
@@ -375,7 +374,7 @@ public class DaoAuthenticationProviderTests {
 
 	@Test
 	public void testSupports() {
-		DaoAuthenticationProvider provider = createProvider(null);
+		DaoAuthenticationProvider provider = createProvider(new MockUserDetailsServiceUserRod());
 		assertThat(provider.supports(UsernamePasswordAuthenticationToken.class)).isTrue();
 		assertThat(!provider.supports(TestingAuthenticationToken.class)).isTrue();
 	}
@@ -421,17 +420,15 @@ public class DaoAuthenticationProviderTests {
 
 	@Test
 	public void constructWhenPasswordEncoderProvidedThenSets() {
-		DaoAuthenticationProvider daoAuthenticationProvider = createProvider(null);
+		DaoAuthenticationProvider daoAuthenticationProvider = createProvider(new MockUserDetailsServiceUserRod());
 		daoAuthenticationProvider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
 		assertThat(daoAuthenticationProvider.getPasswordEncoder()).isSameAs(NoOpPasswordEncoder.getInstance());
 	}
 
-	/**
-	 * This is an explicit test for SEC-2056. It is intentionally ignored since this test
-	 * is not deterministic and {@link #testUserNotFoundEncodesPassword()} ensures that
-	 * SEC-2056 is fixed.
-	 */
-	public void IGNOREtestSec2056() {
+	// SEC-2056
+	@Test
+	@EnabledIfSystemProperty(named = "spring.security.timing-tests", matches = "true")
+	public void testSec2056() {
 		UsernamePasswordAuthenticationToken foundUser = UsernamePasswordAuthenticationToken.unauthenticated("rod",
 				"koala");
 		UsernamePasswordAuthenticationToken notFoundUser = UsernamePasswordAuthenticationToken
@@ -461,6 +458,40 @@ public class DaoAuthenticationProviderTests {
 		assertThat(Math.abs(userNotFoundAvg - userFoundAvg) <= 3)
 			.withFailMessage("User not found average " + userNotFoundAvg
 					+ " should be within 3ms of user found average " + userFoundAvg)
+			.isTrue();
+	}
+
+	// related to SEC-2056
+	@Test
+	@EnabledIfSystemProperty(named = "spring.security.timing-tests", matches = "true")
+	public void testDisabledUserTiming() {
+		UsernamePasswordAuthenticationToken user = UsernamePasswordAuthenticationToken.unauthenticated("rod", "koala");
+		PasswordEncoder encoder = new BCryptPasswordEncoder();
+		MockUserDetailsServiceUserRod users = new MockUserDetailsServiceUserRod();
+		users.password = encoder.encode((CharSequence) user.getCredentials());
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(users);
+		provider.setPasswordEncoder(encoder);
+		int sampleSize = 100;
+		List<Long> enabledTimes = new ArrayList<>(sampleSize);
+		for (int i = 0; i < sampleSize; i++) {
+			long start = System.currentTimeMillis();
+			provider.authenticate(user);
+			enabledTimes.add(System.currentTimeMillis() - start);
+		}
+		UserDetailsChecker preChecks = mock(UserDetailsChecker.class);
+		willThrow(new DisabledException("User is disabled")).given(preChecks).check(any(UserDetails.class));
+		provider.setPreAuthenticationChecks(preChecks);
+		List<Long> disabledTimes = new ArrayList<>(sampleSize);
+		for (int i = 0; i < sampleSize; i++) {
+			long start = System.currentTimeMillis();
+			assertThatExceptionOfType(DisabledException.class).isThrownBy(() -> provider.authenticate(user));
+			disabledTimes.add(System.currentTimeMillis() - start);
+		}
+		double enabledAvg = avg(enabledTimes);
+		double disabledAvg = avg(disabledTimes);
+		assertThat(Math.abs(disabledAvg - enabledAvg) <= 3)
+			.withFailMessage("Disabled user average " + disabledAvg + " should be within 3ms of enabled user average "
+					+ enabledAvg)
 			.isTrue();
 	}
 
@@ -508,6 +539,15 @@ public class DaoAuthenticationProviderTests {
 		Authentication authentication = provider
 			.authenticate(UsernamePasswordAuthenticationToken.unauthenticated("user", "strongpassword"));
 		assertThat(authentication).isNotNull();
+	}
+
+	@Test
+	void authenticateWhenSuccessThenIssuesFactor() {
+		UserDetails user = PasswordEncodedUser.user();
+		DaoAuthenticationProvider provider = new DaoAuthenticationProvider(withUsers(user));
+		Authentication request = new UsernamePasswordAuthenticationToken("user", "password");
+		Authentication result = provider.authenticate(request);
+		SecurityAssertions.assertThat(result).hasAuthority(FactorGrantedAuthority.PASSWORD_AUTHORITY);
 	}
 
 	private UserDetailsService withUsers(UserDetails... users) {

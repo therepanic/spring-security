@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import javax.naming.ldap.LdapContext;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Obtains the <tt>PasswordPolicyControl</tt> from a context for use by other classes.
@@ -36,7 +37,7 @@ public final class PasswordPolicyControlExtractor {
 	private PasswordPolicyControlExtractor() {
 	}
 
-	public static PasswordPolicyResponseControl extractControl(DirContext dirCtx) {
+	public static @Nullable PasswordPolicyResponseControl extractControl(DirContext dirCtx) {
 		LdapContext ctx = (LdapContext) dirCtx;
 		Control[] ctrls = null;
 		try {

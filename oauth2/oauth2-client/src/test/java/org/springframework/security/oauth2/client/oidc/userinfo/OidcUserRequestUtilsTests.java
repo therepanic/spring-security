@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,19 +45,13 @@ public class OidcUserRequestUtilsTests {
 			Instant.now().plus(Duration.ofDays(1)), Collections.singleton("read:user"));
 
 	@Test
-	public void shouldRetrieveUserInfoWhenEndpointDefinedAndScopesOverlapThenTrue() {
+	public void shouldRetrieveUserInfoWhenUserInfoUriThenTrue() {
 		assertThat(OidcUserRequestUtils.shouldRetrieveUserInfo(userRequest())).isTrue();
 	}
 
 	@Test
 	public void shouldRetrieveUserInfoWhenNoUserInfoUriThenFalse() {
 		this.registration.userInfoUri(null);
-		assertThat(OidcUserRequestUtils.shouldRetrieveUserInfo(userRequest())).isFalse();
-	}
-
-	@Test
-	public void shouldRetrieveUserInfoWhenDifferentScopesThenFalse() {
-		this.registration.scope("notintoken");
 		assertThat(OidcUserRequestUtils.shouldRetrieveUserInfo(userRequest())).isFalse();
 	}
 

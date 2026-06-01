@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,4 +17,7 @@
 /**
  * Authenticates standard web browser users via CAS.
  */
+@NullMarked
 package org.springframework.security.cas.web;
+
+import org.jspecify.annotations.NullMarked;

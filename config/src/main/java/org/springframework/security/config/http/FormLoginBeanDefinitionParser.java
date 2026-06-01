@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,8 +85,6 @@ public class FormLoginBeanDefinitionParser {
 
 	private final BeanReference portMapper;
 
-	private final BeanReference portResolver;
-
 	private RootBeanDefinition filterBean;
 
 	private RootBeanDefinition entryPointBean;
@@ -99,7 +97,7 @@ public class FormLoginBeanDefinitionParser {
 
 	FormLoginBeanDefinitionParser(String defaultLoginProcessingUrl, String loginMethod, String filterClassName,
 			BeanReference requestCache, BeanReference sessionStrategy, boolean allowSessionCreation,
-			BeanReference portMapper, BeanReference portResolver) {
+			BeanReference portMapper) {
 		this.defaultLoginProcessingUrl = defaultLoginProcessingUrl;
 		this.loginMethod = loginMethod;
 		this.filterClassName = filterClassName;
@@ -107,7 +105,6 @@ public class FormLoginBeanDefinitionParser {
 		this.sessionStrategy = sessionStrategy;
 		this.allowSessionCreation = allowSessionCreation;
 		this.portMapper = portMapper;
-		this.portResolver = portResolver;
 	}
 
 	public BeanDefinition parse(Element elt, ParserContext pc) {
@@ -163,7 +160,6 @@ public class FormLoginBeanDefinitionParser {
 		entryPointBuilder.getRawBeanDefinition().setSource(source);
 		entryPointBuilder.addConstructorArgValue((this.loginPage != null) ? this.loginPage : DEF_LOGIN_PAGE);
 		entryPointBuilder.addPropertyValue("portMapper", this.portMapper);
-		entryPointBuilder.addPropertyValue("portResolver", this.portResolver);
 		this.entryPointBean = (RootBeanDefinition) entryPointBuilder.getBeanDefinition();
 		return null;
 	}

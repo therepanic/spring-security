@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.saml2.provider.service.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
@@ -43,7 +44,7 @@ public final class CacheSaml2AuthenticationRequestRepository
 	private Cache cache = new ConcurrentMapCache("authentication-requests");
 
 	@Override
-	public AbstractSaml2AuthenticationRequest loadAuthenticationRequest(HttpServletRequest request) {
+	public @Nullable AbstractSaml2AuthenticationRequest loadAuthenticationRequest(HttpServletRequest request) {
 		String relayState = request.getParameter(Saml2ParameterNames.RELAY_STATE);
 		Assert.notNull(relayState, "relayState must not be null");
 		return this.cache.get(relayState, AbstractSaml2AuthenticationRequest.class);
@@ -52,13 +53,14 @@ public final class CacheSaml2AuthenticationRequestRepository
 	@Override
 	public void saveAuthenticationRequest(AbstractSaml2AuthenticationRequest authenticationRequest,
 			HttpServletRequest request, HttpServletResponse response) {
+		Assert.notNull(authenticationRequest, "authenticationRequest must not be null");
 		String relayState = request.getParameter(Saml2ParameterNames.RELAY_STATE);
 		Assert.notNull(relayState, "relayState must not be null");
 		this.cache.put(relayState, authenticationRequest);
 	}
 
 	@Override
-	public AbstractSaml2AuthenticationRequest removeAuthenticationRequest(HttpServletRequest request,
+	public @Nullable AbstractSaml2AuthenticationRequest removeAuthenticationRequest(HttpServletRequest request,
 			HttpServletResponse response) {
 		String relayState = request.getParameter(Saml2ParameterNames.RELAY_STATE);
 		Assert.notNull(relayState, "relayState must not be null");

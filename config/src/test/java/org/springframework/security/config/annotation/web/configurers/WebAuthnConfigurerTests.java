@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,20 @@ package org.springframework.security.config.annotation.web.configurers;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -40,10 +46,19 @@ import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.ui.DefaultResourcesFilter;
+import org.springframework.security.web.webauthn.api.Bytes;
+import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialCreationOptions;
+import org.springframework.security.web.webauthn.api.TestCredentialRecords;
 import org.springframework.security.web.webauthn.api.TestPublicKeyCredentialCreationOptions;
+import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenticationFilter;
+import org.springframework.security.web.webauthn.management.MapPublicKeyCredentialUserEntityRepository;
+import org.springframework.security.web.webauthn.management.MapUserCredentialRepository;
+import org.springframework.security.web.webauthn.management.PublicKeyCredentialUserEntityRepository;
+import org.springframework.security.web.webauthn.management.UserCredentialRepository;
 import org.springframework.security.web.webauthn.management.WebAuthnRelyingPartyOperations;
 import org.springframework.security.web.webauthn.registration.HttpSessionPublicKeyCredentialCreationOptionsRepository;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +67,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willAnswer;
 import static org.mockito.Mockito.mock;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -86,6 +104,14 @@ public class WebAuthnConfigurerTests {
 			.andExpect(status().isOk())
 			.andExpect(header().string("content-type", "text/css;charset=UTF-8"))
 			.andExpect(content().string(containsString("body {")));
+	}
+
+	// gh-18128
+	@Test
+	public void webAuthnAuthenticationFilterIsPostProcessed() throws Exception {
+		this.spring.register(DefaultWebauthnConfiguration.class, PostProcessorConfiguration.class).autowire();
+		PostProcessorConfiguration postProcess = this.spring.getContext().getBean(PostProcessorConfiguration.class);
+		assertThat(postProcess.webauthnFilter).isNotNull();
 	}
 
 	@Test
@@ -125,6 +151,42 @@ public class WebAuthnConfigurerTests {
 		assertThat(defaultResourcesFilters).map(DefaultResourcesFilter::toString)
 			.filteredOn((filterDescription) -> filterDescription.contains("default-ui.css"))
 			.hasSize(1);
+	}
+
+	@Test
+	void webauthnWhenConfiguredDefaultsRpNameToRpId() throws Exception {
+		ObjectMapper mapper = new ObjectMapper();
+		this.spring.register(DefaultWebauthnConfiguration.class).autowire();
+		String response = this.mvc
+			.perform(post("/webauthn/register/options").with(csrf())
+				.with(authentication(new TestingAuthenticationToken("test", "ignored", "ROLE_user"))))
+			.andExpect(status().is2xxSuccessful())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		JsonNode parsedResponse = mapper.readTree(response);
+
+		assertThat(parsedResponse.get("rp").get("id").asText()).isEqualTo("example.com");
+		assertThat(parsedResponse.get("rp").get("name").asText()).isEqualTo("example.com");
+	}
+
+	@Test
+	void webauthnWhenRpNameConfiguredUsesRpName() throws Exception {
+		ObjectMapper mapper = new ObjectMapper();
+		this.spring.register(CustomRpNameWebauthnConfiguration.class).autowire();
+		String response = this.mvc
+			.perform(post("/webauthn/register/options").with(csrf())
+				.with(authentication(new TestingAuthenticationToken("test", "ignored", "ROLE_user"))))
+			.andExpect(status().is2xxSuccessful())
+			.andReturn()
+			.getResponse()
+			.getContentAsString();
+
+		JsonNode parsedResponse = mapper.readTree(response);
+
+		assertThat(parsedResponse.get("rp").get("id").asText()).isEqualTo("example.com");
+		assertThat(parsedResponse.get("rp").get("name").asText()).isEqualTo("Test RP Name");
 	}
 
 	@Test
@@ -205,6 +267,73 @@ public class WebAuthnConfigurerTests {
 		this.mvc.perform(post("/webauthn/register/options"))
 			.andExpect(status().isOk())
 			.andExpect(content().string(expectedBody));
+	}
+
+	@Test
+	void webauthnWhenDeleteAndCredentialBelongsToUserThenNoContent() throws Exception {
+		this.spring.register(DeleteCredentialConfiguration.class).autowire();
+		this.mvc
+			.perform(delete("/webauthn/register/" + DeleteCredentialConfiguration.CREDENTIAL_ID_BASE64URL)
+				.with(authentication(new TestingAuthenticationToken("user", "password", "ROLE_USER"))))
+			.andExpect(status().isNoContent());
+	}
+
+	@Test
+	void webauthnWhenDeleteAndCredentialBelongsToDifferentUserThenForbidden() throws Exception {
+		this.spring.register(DeleteCredentialConfiguration.class).autowire();
+		this.mvc
+			.perform(delete("/webauthn/register/" + DeleteCredentialConfiguration.CREDENTIAL_ID_BASE64URL)
+				.with(authentication(new TestingAuthenticationToken("other-user", "password", "ROLE_USER"))))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	public void webauthnWhenAuthenticationEventPublisherBeanThenUsed() {
+		this.spring.register(DefaultWebauthnConfiguration.class, CustomEventPublisherConfig.class).autowire();
+
+		FilterChainProxy filterChain = this.spring.getContext().getBean(FilterChainProxy.class);
+		WebAuthnAuthenticationFilter webAuthnFilter = filterChain.getFilterChains()
+			.get(0)
+			.getFilters()
+			.stream()
+			.filter(WebAuthnAuthenticationFilter.class::isInstance)
+			.map(WebAuthnAuthenticationFilter.class::cast)
+			.findFirst()
+			.orElseThrow();
+
+		AuthenticationManager authManager = (AuthenticationManager) ReflectionTestUtils.getField(webAuthnFilter,
+				"authenticationManager");
+		assertThat(authManager).isInstanceOf(ProviderManager.class);
+
+		Object publisher = ReflectionTestUtils.getField(authManager, "eventPublisher");
+		AuthenticationEventPublisher expectedPublisher = this.spring.getContext()
+			.getBean(AuthenticationEventPublisher.class);
+		assertThat(publisher).isSameAs(expectedPublisher);
+	}
+
+	@Test
+	public void webauthnWhenNoAuthenticationEventPublisherBeanThenDefaultNullPublisher() {
+		this.spring.register(DefaultWebauthnConfiguration.class).autowire();
+
+		FilterChainProxy filterChain = this.spring.getContext().getBean(FilterChainProxy.class);
+		WebAuthnAuthenticationFilter webAuthnFilter = filterChain.getFilterChains()
+			.get(0)
+			.getFilters()
+			.stream()
+			.filter(WebAuthnAuthenticationFilter.class::isInstance)
+			.map(WebAuthnAuthenticationFilter.class::cast)
+			.findFirst()
+			.orElseThrow();
+
+		AuthenticationManager authManager = (AuthenticationManager) ReflectionTestUtils.getField(webAuthnFilter,
+				"authenticationManager");
+		assertThat(authManager).isInstanceOf(ProviderManager.class);
+
+		Object publisher = ReflectionTestUtils.getField(authManager, "eventPublisher");
+		// ProviderManager.java:316: private static final class NullEventPublisher
+		assertThat(publisher).isNotNull();
+		assertThat(publisher.getClass().getDeclaringClass()).isEqualTo(ProviderManager.class);
+		assertThat(publisher.getClass().getName()).contains("NullEventPublisher");
 	}
 
 	@Configuration
@@ -289,6 +418,36 @@ public class WebAuthnConfigurerTests {
 
 	}
 
+	@Configuration(proxyBeanMethods = false)
+	static class CustomEventPublisherConfig {
+
+		@Bean
+		AuthenticationEventPublisher authenticationEventPublisher() {
+			return mock(AuthenticationEventPublisher.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class PostProcessorConfiguration {
+
+		WebAuthnAuthenticationFilter webauthnFilter;
+
+		@Bean
+		BeanPostProcessor beanPostProcessor() {
+			return new BeanPostProcessor() {
+				@Override
+				public Object postProcessAfterInitialization(Object bean, String beanName) {
+					if (bean instanceof WebAuthnAuthenticationFilter filter) {
+						PostProcessorConfiguration.this.webauthnFilter = filter;
+					}
+					return bean;
+				}
+			};
+		}
+
+	}
+
 	@Configuration
 	@EnableWebSecurity
 	static class DefaultWebauthnConfiguration {
@@ -300,7 +459,32 @@ public class WebAuthnConfigurerTests {
 
 		@Bean
 		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-			return http.formLogin(Customizer.withDefaults()).webAuthn(Customizer.withDefaults()).build();
+			// @formatter:off
+			http
+				.formLogin(Customizer.withDefaults())
+				.webAuthn((authn) -> authn
+					.rpId("example.com")
+				);
+			// @formatter:on
+			return http.build();
+		}
+
+	}
+
+	@Configuration
+	@EnableWebSecurity
+	static class CustomRpNameWebauthnConfiguration {
+
+		@Bean
+		UserDetailsService userDetailsService() {
+			return new InMemoryUserDetailsManager();
+		}
+
+		@Bean
+		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+			return http.formLogin(Customizer.withDefaults())
+				.webAuthn((webauthn) -> webauthn.rpId("example.com").rpName("Test RP Name"))
+				.build();
 		}
 
 	}
@@ -316,7 +500,14 @@ public class WebAuthnConfigurerTests {
 
 		@Bean
 		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-			return http.webAuthn(Customizer.withDefaults()).build();
+			// @formatter:off
+			http
+				.webAuthn((authn) -> authn
+						.rpId("spring.io")
+						.rpName("spring")
+				);
+			// @formatter:on
+			return http.build();
 		}
 
 	}
@@ -332,9 +523,16 @@ public class WebAuthnConfigurerTests {
 
 		@Bean
 		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-			return http.formLogin(Customizer.withDefaults())
-				.webAuthn((webauthn) -> webauthn.disableDefaultRegistrationPage(true))
-				.build();
+			// @formatter:off
+			http
+				.formLogin(Customizer.withDefaults())
+				.webAuthn((authn) -> authn
+					.rpId("spring.io")
+					.rpName("spring")
+					.disableDefaultRegistrationPage(true)
+				);
+			// @formatter:on
+			return http.build();
 		}
 
 	}
@@ -350,9 +548,61 @@ public class WebAuthnConfigurerTests {
 
 		@Bean
 		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-			return http.formLogin((login) -> login.loginPage("/custom-login-page"))
-				.webAuthn((webauthn) -> webauthn.disableDefaultRegistrationPage(true))
-				.build();
+			// @formatter:off
+			http
+					.formLogin((login) -> login
+						.loginPage("/custom-login-page")
+					)
+					.webAuthn((authn) -> authn
+						.rpId("spring.io")
+						.rpName("spring")
+						.disableDefaultRegistrationPage(true)
+					);
+			// @formatter:on
+			return http.build();
+		}
+
+	}
+
+	@Configuration
+	@EnableWebSecurity
+	static class DeleteCredentialConfiguration {
+
+		static final String CREDENTIAL_ID_BASE64URL = "NauGCN7bZ5jEBwThcde51g";
+
+		static final Bytes USER_ENTITY_ID = Bytes.fromBase64("vKBFhsWT3gQnn-gHdT4VXIvjDkVXVYg5w8CLGHPunMM");
+
+		@Bean
+		UserDetailsService userDetailsService() {
+			return new InMemoryUserDetailsManager();
+		}
+
+		@Bean
+		WebAuthnRelyingPartyOperations webAuthnRelyingPartyOperations() {
+			return mock(WebAuthnRelyingPartyOperations.class);
+		}
+
+		@Bean
+		UserCredentialRepository userCredentialRepository() {
+			MapUserCredentialRepository repository = new MapUserCredentialRepository();
+			repository.save(TestCredentialRecords.userCredential().build());
+			return repository;
+		}
+
+		@Bean
+		PublicKeyCredentialUserEntityRepository userEntityRepository() {
+			MapPublicKeyCredentialUserEntityRepository repository = new MapPublicKeyCredentialUserEntityRepository();
+			repository.save(ImmutablePublicKeyCredentialUserEntity.builder()
+				.name("user")
+				.id(USER_ENTITY_ID)
+				.displayName("User")
+				.build());
+			return repository;
+		}
+
+		@Bean
+		SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+			return http.csrf(AbstractHttpConfigurer::disable).webAuthn(Customizer.withDefaults()).build();
 		}
 
 	}

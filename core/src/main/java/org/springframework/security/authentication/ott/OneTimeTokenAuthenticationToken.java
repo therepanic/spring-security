@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.io.Serial;
 import java.util.Collection;
 import java.util.Collections;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -34,11 +36,15 @@ public class OneTimeTokenAuthenticationToken extends AbstractAuthenticationToken
 	@Serial
 	private static final long serialVersionUID = -8691636031126328365L;
 
-	private final Object principal;
+	private final @Nullable Object principal;
 
-	private String tokenValue;
+	private @Nullable String tokenValue;
 
-	public OneTimeTokenAuthenticationToken(Object principal, String tokenValue) {
+	/**
+	 * @deprecated Please use constructor that takes a {@link String} instead
+	 */
+	@Deprecated(forRemoval = true, since = "7.0")
+	public OneTimeTokenAuthenticationToken(@Nullable Object principal, String tokenValue) {
 		super(Collections.emptyList());
 		this.tokenValue = tokenValue;
 		this.principal = principal;
@@ -48,6 +54,10 @@ public class OneTimeTokenAuthenticationToken extends AbstractAuthenticationToken
 		this(null, tokenValue);
 	}
 
+	/**
+	 * @deprecated Please use {@link OneTimeTokenAuthentication} instead
+	 */
+	@Deprecated(forRemoval = true, since = "7.0")
 	public OneTimeTokenAuthenticationToken(Object principal, Collection<? extends GrantedAuthority> authorities) {
 		super(authorities);
 		this.principal = principal;
@@ -58,9 +68,11 @@ public class OneTimeTokenAuthenticationToken extends AbstractAuthenticationToken
 	 * Creates an unauthenticated token
 	 * @param tokenValue the one-time token value
 	 * @return an unauthenticated {@link OneTimeTokenAuthenticationToken}
+	 * @deprecated Please use constructor that takes a {@link String} instead
 	 */
-	public static OneTimeTokenAuthenticationToken unauthenticated(String tokenValue) {
-		return new OneTimeTokenAuthenticationToken(null, tokenValue);
+	@Deprecated(forRemoval = true, since = "7.0")
+	public static OneTimeTokenAuthenticationToken unauthenticated(@Nullable String tokenValue) {
+		return new OneTimeTokenAuthenticationToken(null, (tokenValue != null) ? tokenValue : "");
 	}
 
 	/**
@@ -68,7 +80,9 @@ public class OneTimeTokenAuthenticationToken extends AbstractAuthenticationToken
 	 * @param principal the principal
 	 * @param tokenValue the one-time token value
 	 * @return an unauthenticated {@link OneTimeTokenAuthenticationToken}
+	 * @deprecated Please use constructor that takes a {@link String} instead
 	 */
+	@Deprecated(forRemoval = true, since = "7.0")
 	public static OneTimeTokenAuthenticationToken unauthenticated(Object principal, String tokenValue) {
 		return new OneTimeTokenAuthenticationToken(principal, tokenValue);
 	}
@@ -78,7 +92,9 @@ public class OneTimeTokenAuthenticationToken extends AbstractAuthenticationToken
 	 * @param principal the principal
 	 * @param authorities the principal authorities
 	 * @return an authenticated {@link OneTimeTokenAuthenticationToken}
+	 * @deprecated Please use {@link OneTimeTokenAuthentication} instead
 	 */
+	@Deprecated(forRemoval = true, since = "7.0")
 	public static OneTimeTokenAuthenticationToken authenticated(Object principal,
 			Collection<? extends GrantedAuthority> authorities) {
 		return new OneTimeTokenAuthenticationToken(principal, authorities);
@@ -88,17 +104,17 @@ public class OneTimeTokenAuthenticationToken extends AbstractAuthenticationToken
 	 * Returns the one-time token value
 	 * @return
 	 */
-	public String getTokenValue() {
+	public @Nullable String getTokenValue() {
 		return this.tokenValue;
 	}
 
 	@Override
-	public Object getCredentials() {
+	public @Nullable Object getCredentials() {
 		return this.tokenValue;
 	}
 
 	@Override
-	public Object getPrincipal() {
+	public @Nullable Object getPrincipal() {
 		return this.principal;
 	}
 

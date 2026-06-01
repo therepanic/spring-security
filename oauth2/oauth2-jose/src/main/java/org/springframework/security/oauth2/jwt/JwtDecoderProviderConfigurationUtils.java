@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -164,6 +164,7 @@ final class JwtDecoderProviderConfigurationUtils {
 				RequestEntity<Void> request = RequestEntity.get(uri.toUriString()).build();
 				ResponseEntity<Map<String, Object>> response = rest.exchange(request, STRING_OBJECT_MAP);
 				Map<String, Object> configuration = response.getBody();
+				Assert.notNull(configuration, "configuration must not be null");
 				Assert.isTrue(configuration.get("jwks_uri") != null, "The public JWK set URI must not be null");
 				return configuration;
 			}

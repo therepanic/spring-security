@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.messaging.Message;
@@ -110,7 +111,7 @@ public final class AuthorizationChannelInterceptor implements ChannelInterceptor
 
 		@Override
 		public <T> void publishAuthorizationEvent(Supplier<Authentication> authentication, T object,
-				AuthorizationResult result) {
+				@Nullable AuthorizationResult result) {
 
 		}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
@@ -50,7 +51,7 @@ public class SimpleUrlAuthenticationFailureHandler implements AuthenticationFail
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
-	private String defaultFailureUrl;
+	private @Nullable String defaultFailureUrl;
 
 	private boolean forwardToDestination = false;
 

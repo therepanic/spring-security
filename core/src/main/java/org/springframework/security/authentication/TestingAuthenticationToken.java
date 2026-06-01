@@ -16,11 +16,15 @@
 
 package org.springframework.security.authentication;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.util.Assert;
 
 /**
  * An {@link org.springframework.security.core.Authentication} implementation that is
@@ -34,26 +38,30 @@ public class TestingAuthenticationToken extends AbstractAuthenticationToken {
 
 	private static final long serialVersionUID = 1L;
 
-	private final Object credentials;
+	private final @Nullable Object credentials;
 
 	private final Object principal;
 
-	public TestingAuthenticationToken(Object principal, Object credentials) {
-		super(null);
+	public TestingAuthenticationToken(Object principal, @Nullable Object credentials) {
+		super((Collection<? extends GrantedAuthority>) null);
 		this.principal = principal;
 		this.credentials = credentials;
 	}
 
-	public TestingAuthenticationToken(Object principal, Object credentials, String... authorities) {
+	public TestingAuthenticationToken(Object principal, @Nullable Object credentials, String... authorities) {
 		this(principal, credentials, AuthorityUtils.createAuthorityList(authorities));
 	}
 
-	public TestingAuthenticationToken(Object principal, Object credentials,
+	public TestingAuthenticationToken(Object principal, @Nullable Object credentials, GrantedAuthority... authorities) {
+		this(principal, credentials, Arrays.asList(authorities));
+	}
+
+	public TestingAuthenticationToken(Object principal, @Nullable Object credentials,
 			List<? extends GrantedAuthority> authorities) {
 		this(principal, credentials, (Collection<? extends GrantedAuthority>) authorities);
 	}
 
-	public TestingAuthenticationToken(Object principal, Object credentials,
+	public TestingAuthenticationToken(Object principal, @Nullable Object credentials,
 			Collection<? extends GrantedAuthority> authorities) {
 		super(authorities);
 		this.principal = principal;
@@ -61,14 +69,62 @@ public class TestingAuthenticationToken extends AbstractAuthenticationToken {
 		setAuthenticated(true);
 	}
 
+	protected TestingAuthenticationToken(Builder<?> builder) {
+		super(builder);
+		this.principal = builder.principal;
+		this.credentials = builder.credentials;
+	}
+
 	@Override
-	public Object getCredentials() {
+	public @Nullable Object getCredentials() {
 		return this.credentials;
 	}
 
 	@Override
 	public Object getPrincipal() {
 		return this.principal;
+	}
+
+	@Override
+	public Builder<?> toBuilder() {
+		return new Builder<>(this);
+	}
+
+	/**
+	 * A builder of {@link TestingAuthenticationToken} instances
+	 *
+	 * @since 7.0
+	 */
+	public static class Builder<B extends Builder<B>> extends AbstractAuthenticationBuilder<B> {
+
+		private Object principal;
+
+		private @Nullable Object credentials;
+
+		protected Builder(TestingAuthenticationToken token) {
+			super(token);
+			this.principal = token.principal;
+			this.credentials = token.credentials;
+		}
+
+		@Override
+		public B principal(@Nullable Object principal) {
+			Assert.notNull(principal, "principal cannot be null");
+			this.principal = principal;
+			return (B) this;
+		}
+
+		@Override
+		public B credentials(@Nullable Object credentials) {
+			this.credentials = credentials;
+			return (B) this;
+		}
+
+		@Override
+		public TestingAuthenticationToken build() {
+			return new TestingAuthenticationToken(this);
+		}
+
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.security.authorization.method;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.expression.EvaluationContext;
@@ -23,6 +24,9 @@ import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ExpressionAuthorizationDecision;
+import org.springframework.security.authorization.ReactiveAuthorizationManager;
+import org.springframework.security.core.Authentication;
+import org.springframework.util.Assert;
 
 /**
  * For internal use only, as this contract is likely to change.
@@ -33,6 +37,11 @@ import org.springframework.security.authorization.ExpressionAuthorizationDecisio
 final class ReactiveExpressionUtils {
 
 	static Mono<AuthorizationResult> evaluate(Expression expr, EvaluationContext ctx) {
+		return evaluate(expr, ctx, Mono.empty(), null);
+	}
+
+	static <T> Mono<AuthorizationResult> evaluate(Expression expr, EvaluationContext ctx,
+			Mono<Authentication> authentication, @Nullable T context) {
 		return Mono.defer(() -> {
 			Object value;
 			try {
@@ -42,6 +51,10 @@ final class ReactiveExpressionUtils {
 				return Mono.error(() -> new IllegalArgumentException(
 						"Failed to evaluate expression '" + expr.getExpressionString() + "'", ex));
 			}
+			if (value instanceof ReactiveAuthorizationManager<?> manager) {
+				Assert.notNull(context, "context cannot be null");
+				return ((ReactiveAuthorizationManager<T>) manager).authorize(authentication, context);
+			}
 			if (value instanceof Mono<?> mono) {
 				return mono.flatMap((data) -> adapt(expr, data));
 			}
@@ -49,7 +62,7 @@ final class ReactiveExpressionUtils {
 		});
 	}
 
-	private static Mono<AuthorizationResult> adapt(Expression expr, Object value) {
+	private static Mono<AuthorizationResult> adapt(Expression expr, @Nullable Object value) {
 		if (value instanceof Boolean granted) {
 			return Mono.just(new ExpressionAuthorizationDecision(granted, expr));
 		}

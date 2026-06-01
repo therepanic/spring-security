@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.security.web.access.intercept;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -26,13 +28,13 @@ public class RequestKey {
 
 	private final String url;
 
-	private final String method;
+	private final @Nullable String method;
 
 	public RequestKey(String url) {
 		this(url, null);
 	}
 
-	public RequestKey(String url, String method) {
+	public RequestKey(String url, @Nullable String method) {
 		Assert.notNull(url, "url cannot be null");
 		this.url = url;
 		this.method = method;
@@ -42,12 +44,12 @@ public class RequestKey {
 		return this.url;
 	}
 
-	String getMethod() {
+	@Nullable String getMethod() {
 		return this.method;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (!(obj instanceof RequestKey key)) {
 			return false;
 		}

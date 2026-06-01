@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.springframework.security.web.authentication.preauth;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,15 +28,18 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
 import org.springframework.core.log.LogMessage;
+import org.springframework.lang.Contract;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
@@ -96,11 +102,12 @@ public abstract class AbstractPreAuthenticatedProcessingFilter extends GenericFi
 	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
 		.getContextHolderStrategy();
 
-	private ApplicationEventPublisher eventPublisher = null;
+	private @Nullable ApplicationEventPublisher eventPublisher = null;
 
 	private AuthenticationDetailsSource<HttpServletRequest, ?> authenticationDetailsSource = new WebAuthenticationDetailsSource();
 
-	private AuthenticationManager authenticationManager = null;
+	@SuppressWarnings("NullAway.Init")
+	private AuthenticationManager authenticationManager;
 
 	private boolean continueFilterChainOnUnsuccessfulAuthentication = true;
 
@@ -108,13 +115,15 @@ public abstract class AbstractPreAuthenticatedProcessingFilter extends GenericFi
 
 	private boolean invalidateSessionOnPrincipalChange = true;
 
-	private AuthenticationSuccessHandler authenticationSuccessHandler = null;
+	private @Nullable AuthenticationSuccessHandler authenticationSuccessHandler = null;
 
-	private AuthenticationFailureHandler authenticationFailureHandler = null;
+	private @Nullable AuthenticationFailureHandler authenticationFailureHandler = null;
 
 	private RequestMatcher requiresAuthenticationRequestMatcher = new PreAuthenticatedProcessingRequestMatcher();
 
 	private SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+
+	private boolean mfaEnabled;
 
 	/**
 	 * Check whether all required properties have been set.
@@ -202,6 +211,23 @@ public abstract class AbstractPreAuthenticatedProcessingFilter extends GenericFi
 					principal, credentials);
 			authenticationRequest.setDetails(this.authenticationDetailsSource.buildDetails(request));
 			Authentication authenticationResult = this.authenticationManager.authenticate(authenticationRequest);
+			Authentication current = this.securityContextHolderStrategy.getContext().getAuthentication();
+			if (shouldPerformMfa(current, authenticationResult)) {
+				authenticationResult = authenticationResult.toBuilder()
+				// @formatter:off
+					.authorities((a) -> {
+						Set<String> newAuthorities = a.stream()
+								.map(GrantedAuthority::getAuthority)
+								.collect(Collectors.toUnmodifiableSet());
+						for (GrantedAuthority currentAuthority : current.getAuthorities()) {
+							if (!newAuthorities.contains(currentAuthority.getAuthority())) {
+								a.add(currentAuthority);
+							}
+						}
+					})
+					.build();
+					// @formatter:on
+			}
 			successfulAuthentication(request, response, authenticationResult);
 		}
 		catch (AuthenticationException ex) {
@@ -210,6 +236,29 @@ public abstract class AbstractPreAuthenticatedProcessingFilter extends GenericFi
 				throw ex;
 			}
 		}
+	}
+
+	@Contract("null, _ -> false")
+	private boolean shouldPerformMfa(@Nullable Authentication current, Authentication authenticationResult) {
+		if (!this.mfaEnabled) {
+			return false;
+		}
+		if (current == null || !current.isAuthenticated()) {
+			return false;
+		}
+		if (!declaresToBuilder(authenticationResult)) {
+			return false;
+		}
+		return current.getName().equals(authenticationResult.getName());
+	}
+
+	private static boolean declaresToBuilder(Authentication authentication) {
+		for (Method method : authentication.getClass().getDeclaredMethods()) {
+			if (method.getName().equals("toBuilder") && method.getParameterTypes().length == 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -253,6 +302,15 @@ public abstract class AbstractPreAuthenticatedProcessingFilter extends GenericFi
 	@Override
 	public void setApplicationEventPublisher(ApplicationEventPublisher anApplicationEventPublisher) {
 		this.eventPublisher = anApplicationEventPublisher;
+	}
+
+	/**
+	 * Enables Multi-Factor Authentication (MFA) support.
+	 * @param mfaEnabled true to enable MFA support, false to disable it. Default is
+	 * false.
+	 */
+	public void setMfaEnabled(boolean mfaEnabled) {
+		this.mfaEnabled = mfaEnabled;
 	}
 
 	/**
@@ -357,14 +415,14 @@ public abstract class AbstractPreAuthenticatedProcessingFilter extends GenericFi
 	/**
 	 * Override to extract the principal information from the current request
 	 */
-	protected abstract Object getPreAuthenticatedPrincipal(HttpServletRequest request);
+	protected abstract @Nullable Object getPreAuthenticatedPrincipal(HttpServletRequest request);
 
 	/**
 	 * Override to extract the credentials (if applicable) from the current request.
 	 * Should not return null for a valid principal, though some implementations may
 	 * return a dummy value.
 	 */
-	protected abstract Object getPreAuthenticatedCredentials(HttpServletRequest request);
+	protected abstract @Nullable Object getPreAuthenticatedCredentials(HttpServletRequest request);
 
 	/**
 	 * Request matcher for default auth check logic

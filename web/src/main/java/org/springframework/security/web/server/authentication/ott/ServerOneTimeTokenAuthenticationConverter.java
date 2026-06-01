@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.web.server.authentication.ott;
 
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpHeaders;
@@ -49,16 +50,17 @@ public final class ServerOneTimeTokenAuthenticationConverter implements ServerAu
 		Assert.notNull(exchange, "exchange cannot be null");
 		if (isFormEncodedRequest(exchange.getRequest())) {
 			return exchange.getFormData()
-				.map((data) -> OneTimeTokenAuthenticationToken.unauthenticated(data.getFirst(TOKEN)));
+				.flatMap((data) -> Mono.justOrEmpty(data.getFirst(TOKEN)))
+				.map(OneTimeTokenAuthenticationToken::new);
 		}
 		String token = resolveTokenFromRequest(exchange.getRequest());
 		if (!StringUtils.hasText(token)) {
 			return Mono.empty();
 		}
-		return Mono.just(OneTimeTokenAuthenticationToken.unauthenticated(token));
+		return Mono.just(new OneTimeTokenAuthenticationToken(token));
 	}
 
-	private String resolveTokenFromRequest(ServerHttpRequest request) {
+	private @Nullable String resolveTokenFromRequest(ServerHttpRequest request) {
 		List<String> parameterTokens = request.getQueryParams().get(TOKEN);
 		if (CollectionUtils.isEmpty(parameterTokens)) {
 			return null;

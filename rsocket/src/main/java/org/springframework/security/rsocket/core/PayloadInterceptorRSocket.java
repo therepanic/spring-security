@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import reactor.util.context.Context;
 
 import org.springframework.security.rsocket.api.PayloadExchangeType;
 import org.springframework.security.rsocket.api.PayloadInterceptor;
+import org.springframework.util.Assert;
 import org.springframework.util.MimeType;
 
 /**
@@ -91,6 +92,7 @@ class PayloadInterceptorRSocket extends RSocketProxy {
 	public Flux<Payload> requestChannel(Publisher<Payload> payloads) {
 		return Flux.from(payloads).switchOnFirst((signal, innerFlux) -> {
 			Payload firstPayload = signal.get();
+			Assert.notNull(firstPayload, "payload cannot be null");
 			return intercept(PayloadExchangeType.REQUEST_CHANNEL, firstPayload)
 				.flatMapMany((context) -> innerFlux.index()
 					.concatMap((tuple) -> justOrIntercept(tuple.getT1(), tuple.getT2()))

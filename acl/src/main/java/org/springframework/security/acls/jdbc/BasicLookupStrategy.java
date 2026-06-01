@@ -31,6 +31,8 @@ import java.util.Set;
 
 import javax.sql.DataSource;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.core.convert.ConversionException;
 import org.springframework.core.convert.ConversionService;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -65,10 +67,11 @@ import org.springframework.util.Assert;
  * NB: This implementation does attempt to provide reasonably optimised lookups - within
  * the constraints of a normalised database and standard ANSI SQL features. If you are
  * willing to sacrifice either of these constraints (e.g. use a particular database
- * feature such as hierarchical queries or materalized views, or reduce normalisation) you
- * are likely to achieve better performance. In such situations you will need to provide
- * your own custom <code>LookupStrategy</code>. This class does not support subclassing,
- * as it is likely to change in future releases and therefore subclassing is unsupported.
+ * feature such as hierarchical queries or materialized views, or reduce normalisation)
+ * you are likely to achieve better performance. In such situations you will need to
+ * provide your own custom <code>LookupStrategy</code>. This class does not support
+ * subclassing, as it is likely to change in future releases and therefore subclassing is
+ * unsupported.
  * <p>
  * There are two SQL queries executed, one in the <tt>lookupPrimaryKeys</tt> method and
  * one in <tt>lookupObjectIdentities</tt>. These are built from the same select and "order
@@ -223,7 +226,8 @@ public class BasicLookupStrategy implements LookupStrategy {
 	 * @param findNow Long-based primary keys to retrieve
 	 * @param sids
 	 */
-	private void lookupPrimaryKeys(final Map<Serializable, Acl> acls, final Set<Long> findNow, final List<Sid> sids) {
+	private void lookupPrimaryKeys(final Map<Serializable, Acl> acls, final Set<Long> findNow,
+			final @Nullable List<Sid> sids) {
 		Assert.notNull(acls, "ACLs are required");
 		Assert.notEmpty(findNow, "Items to find now required");
 		String sql = computeRepeatingSql(this.lookupPrimaryKeysWhereClause, findNow.size());
@@ -263,7 +267,7 @@ public class BasicLookupStrategy implements LookupStrategy {
 	 * automatically create entries if required)
 	 */
 	@Override
-	public final Map<ObjectIdentity, Acl> readAclsById(List<ObjectIdentity> objects, List<Sid> sids) {
+	public final Map<ObjectIdentity, Acl> readAclsById(List<ObjectIdentity> objects, @Nullable List<Sid> sids) {
 		Assert.isTrue(this.batchSize >= 1, "BatchSize must be >= 1");
 		Assert.notEmpty(objects, "Objects to lookup required");
 		// Map<ObjectIdentity,Acl>
@@ -322,7 +326,7 @@ public class BasicLookupStrategy implements LookupStrategy {
 	 * properly-configured parent ACLs.
 	 */
 	private Map<ObjectIdentity, Acl> lookupObjectIdentities(final Collection<ObjectIdentity> objectIdentities,
-			List<Sid> sids) {
+			@Nullable List<Sid> sids) {
 		Assert.notEmpty(objectIdentities, "Must provide identities to lookup");
 
 		// contains Acls with StubAclParents
@@ -398,8 +402,10 @@ public class BasicLookupStrategy implements LookupStrategy {
 		}
 
 		// Now we have the parent (if there is one), create the true AclImpl
+		Sid owner = inputAcl.getOwner();
+		Assert.isTrue(owner != null, "Owner is required");
 		AclImpl result = new AclImpl(inputAcl.getObjectIdentity(), inputAcl.getId(), this.aclAuthorizationStrategy,
-				this.grantingStrategy, parent, null, inputAcl.isEntriesInheriting(), inputAcl.getOwner());
+				this.grantingStrategy, parent, null, inputAcl.isEntriesInheriting(), owner);
 
 		// Copy the "aces" from the input to the destination
 
@@ -505,9 +511,9 @@ public class BasicLookupStrategy implements LookupStrategy {
 
 		private final Map<Serializable, Acl> acls;
 
-		private final List<Sid> sids;
+		private final @Nullable List<Sid> sids;
 
-		ProcessResultSet(Map<Serializable, Acl> acls, List<Sid> sids) {
+		ProcessResultSet(Map<Serializable, Acl> acls, @Nullable List<Sid> sids) {
 			Assert.notNull(acls, "ACLs cannot be null");
 			this.acls = acls;
 			this.sids = sids; // can be null
@@ -578,6 +584,9 @@ public class BasicLookupStrategy implements LookupStrategy {
 				// target id type, e.g. UUID.
 				Serializable identifier = (Serializable) rs.getObject("object_id_identity");
 				identifier = BasicLookupStrategy.this.aclClassIdUtils.identifierFrom(identifier, rs);
+				if (identifier == null) {
+					throw new IllegalStateException("Identifier cannot be null");
+				}
 				ObjectIdentity objectIdentity = BasicLookupStrategy.this.objectIdentityGenerator
 					.createObjectIdentity(identifier, rs.getString("class"));
 
@@ -669,7 +678,7 @@ public class BasicLookupStrategy implements LookupStrategy {
 		}
 
 		@Override
-		public boolean isSidLoaded(List<Sid> sids) {
+		public boolean isSidLoaded(@Nullable List<Sid> sids) {
 			throw new UnsupportedOperationException("Stub only");
 		}
 

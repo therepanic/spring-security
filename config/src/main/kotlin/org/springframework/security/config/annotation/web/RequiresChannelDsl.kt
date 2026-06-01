@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+@file:Suppress("DEPRECATION")
 
 package org.springframework.security.config.annotation.web
 
@@ -33,6 +35,7 @@ import org.springframework.security.web.util.matcher.RequestMatcher
  * @property channelProcessors the [ChannelProcessor] instances to use in
  * [ChannelDecisionManagerImpl]
  */
+@Deprecated(message="since 6.5 use redirectToHttps instead")
 class RequiresChannelDsl : AbstractRequestMatcherDsl() {
     private val channelSecurityRules = mutableListOf<AuthorizationRule>()
 

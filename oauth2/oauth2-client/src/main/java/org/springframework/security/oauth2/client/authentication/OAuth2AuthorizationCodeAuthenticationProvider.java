@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.oauth2.client.authentication;
+
+import java.util.Objects;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
@@ -74,11 +76,13 @@ public class OAuth2AuthorizationCodeAuthenticationProvider implements Authentica
 		OAuth2AuthorizationResponse authorizationResponse = authorizationCodeAuthentication.getAuthorizationExchange()
 			.getAuthorizationResponse();
 		if (authorizationResponse.statusError()) {
-			throw new OAuth2AuthorizationException(authorizationResponse.getError());
+			OAuth2Error error = authorizationResponse.getError();
+			Assert.notNull(error, "error cannot be null when status is error");
+			throw new OAuth2AuthorizationException(error);
 		}
 		OAuth2AuthorizationRequest authorizationRequest = authorizationCodeAuthentication.getAuthorizationExchange()
 			.getAuthorizationRequest();
-		if (!authorizationResponse.getState().equals(authorizationRequest.getState())) {
+		if (!Objects.equals(authorizationResponse.getState(), authorizationRequest.getState())) {
 			OAuth2Error oauth2Error = new OAuth2Error(INVALID_STATE_PARAMETER_ERROR_CODE);
 			throw new OAuth2AuthorizationException(oauth2Error);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ public interface SecurityConfigurer<O, B extends SecurityBuilder<O>> {
 	 * @param builder
 	 * @throws Exception
 	 */
-	void init(B builder) throws Exception;
+	void init(B builder);
 
 	/**
 	 * Configure the {@link SecurityBuilder} by setting the necessary properties on the
@@ -46,6 +46,6 @@ public interface SecurityConfigurer<O, B extends SecurityBuilder<O>> {
 	 * @param builder
 	 * @throws Exception
 	 */
-	void configure(B builder) throws Exception;
+	void configure(B builder);
 
 }

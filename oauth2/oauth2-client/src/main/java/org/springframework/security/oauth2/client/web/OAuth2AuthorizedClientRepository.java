@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.oauth2.client.web;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -54,8 +55,8 @@ public interface OAuth2AuthorizedClientRepository {
 	 * @param <T> a type of OAuth2AuthorizedClient
 	 * @return the {@link OAuth2AuthorizedClient} or {@code null} if not available
 	 */
-	<T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId, Authentication principal,
-			HttpServletRequest request);
+	<T extends OAuth2AuthorizedClient> @Nullable T loadAuthorizedClient(String clientRegistrationId,
+			Authentication principal, HttpServletRequest request);
 
 	/**
 	 * Saves the {@link OAuth2AuthorizedClient} associating it to the provided End-User

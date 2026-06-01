@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,4 +18,7 @@
  * Classes and interfaces that provide support for
  * {@link org.springframework.security.oauth2.client.registration.ClientRegistration}.
  */
+@NullMarked
 package org.springframework.security.oauth2.client.registration;
+
+import org.jspecify.annotations.NullMarked;

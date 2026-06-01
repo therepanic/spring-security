@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.oauth2.core.converter;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.ConverterRegistry;
@@ -32,7 +34,7 @@ import org.springframework.security.oauth2.core.ClaimAccessor;
  */
 public final class ClaimConversionService extends GenericConversionService {
 
-	private static volatile ClaimConversionService sharedInstance;
+	private static volatile @Nullable ClaimConversionService sharedInstance;
 
 	private ClaimConversionService() {
 		addConverters(this);

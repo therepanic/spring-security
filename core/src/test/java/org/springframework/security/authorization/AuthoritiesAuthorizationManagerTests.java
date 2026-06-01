@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package org.springframework.security.authorization;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
@@ -30,11 +32,13 @@ import org.springframework.security.core.Authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 /**
  * Tests for {@link AuthoritiesAuthorizationManager}.
  *
  * @author Evgeniy Cheban
+ * @author Khyojae
  */
 class AuthoritiesAuthorizationManagerTests {
 
@@ -81,6 +85,22 @@ class AuthoritiesAuthorizationManagerTests {
 		Supplier<Authentication> authentication = () -> new TestingAuthenticationToken("user", "password",
 				"ROLE_ADMIN");
 		assertThat(manager.authorize(authentication, Collections.singleton("ROLE_USER")).isGranted()).isTrue();
+	}
+
+	@Test
+	// gh-18543
+	void authorizeWhenAuthorityIsNullThenDoesNotThrowNullPointerException() {
+		AuthoritiesAuthorizationManager manager = new AuthoritiesAuthorizationManager();
+
+		Authentication authentication = new TestingAuthenticationToken("user", "password",
+				Collections.singletonList(() -> null));
+
+		Collection<String> authoritiesContainsThrowsNPE = Set.of("ROLE_USER");
+
+		// must be Collection that throws NPE when .contains(null) is invoked
+		// to replicate the issue in gh-18543
+		assertThatNullPointerException().isThrownBy(() -> authoritiesContainsThrowsNPE.contains(null));
+		assertThat(manager.authorize(() -> authentication, authoritiesContainsThrowsNPE).isGranted()).isFalse();
 	}
 
 }

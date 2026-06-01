@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2002-2020 the original author or authors.
+  ~ Copyright 2004-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@
 		<intercept-url pattern="/**" access="authenticated"/>
 		<oauth2-login access-token-response-client-ref="accessTokenResponseClient"
 						user-service-ref="oauth2UserService"
+					  	oidc-user-service-ref="oidcUserService"
 						user-authorities-mapper-ref="userAuthoritiesMapper"
 						jwt-decoder-factory-ref="jwtDecoderFactory"
 						authorization-request-repository-ref="authorizationRequestRepository"
@@ -39,6 +40,9 @@
 </b:bean>
 	<b:bean id="oauth2UserService" class="org.mockito.Mockito" factory-method="mock">
     <b:constructor-arg value="org.springframework.security.oauth2.client.userinfo.OAuth2UserService" type="java.lang.Class"/>
+</b:bean>
+	<b:bean id="oidcUserService" class="org.mockito.Mockito" factory-method="mock">
+	<b:constructor-arg value="org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService" type="java.lang.Class"/>
 </b:bean>
 	<b:bean id="userAuthoritiesMapper" class="org.mockito.Mockito" factory-method="mock">
     <b:constructor-arg value="org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper" type="java.lang.Class"/>

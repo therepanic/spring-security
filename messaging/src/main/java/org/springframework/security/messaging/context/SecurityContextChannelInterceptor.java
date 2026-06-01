@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.messaging.context;
 
 import java.util.Stack;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
@@ -96,7 +98,7 @@ public final class SecurityContextChannelInterceptor implements ExecutorChannelI
 	}
 
 	@Override
-	public void afterSendCompletion(Message<?> message, MessageChannel channel, boolean sent, Exception ex) {
+	public void afterSendCompletion(Message<?> message, MessageChannel channel, boolean sent, @Nullable Exception ex) {
 		cleanup();
 	}
 
@@ -107,7 +109,8 @@ public final class SecurityContextChannelInterceptor implements ExecutorChannelI
 	}
 
 	@Override
-	public void afterMessageHandled(Message<?> message, MessageChannel channel, MessageHandler handler, Exception ex) {
+	public void afterMessageHandled(Message<?> message, MessageChannel channel, MessageHandler handler,
+			@Nullable Exception ex) {
 		cleanup();
 	}
 
@@ -131,7 +134,7 @@ public final class SecurityContextChannelInterceptor implements ExecutorChannelI
 		this.securityContextHolderStrategy.setContext(context);
 	}
 
-	private Authentication getAuthentication(Object user) {
+	private Authentication getAuthentication(@Nullable Object user) {
 		if ((user instanceof Authentication)) {
 			return (Authentication) user;
 		}

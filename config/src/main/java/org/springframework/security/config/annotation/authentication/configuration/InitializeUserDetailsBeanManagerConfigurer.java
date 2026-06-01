@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 	}
 
 	@Override
-	public void init(AuthenticationManagerBuilder auth) throws Exception {
+	public void init(AuthenticationManagerBuilder auth) {
 		auth.apply(new InitializeUserDetailsManagerConfigurer());
 	}
 
@@ -65,7 +65,7 @@ class InitializeUserDetailsBeanManagerConfigurer extends GlobalAuthenticationCon
 		private final Log logger = LogFactory.getLog(getClass());
 
 		@Override
-		public void configure(AuthenticationManagerBuilder auth) throws Exception {
+		public void configure(AuthenticationManagerBuilder auth) {
 			String[] beanNames = InitializeUserDetailsBeanManagerConfigurer.this.context
 				.getBeanNamesForType(UserDetailsService.class);
 			if (auth.isConfigured()) {

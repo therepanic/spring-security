@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.web.FilterChainProxy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -113,7 +114,7 @@ public final class DebugFilter implements Filter {
 		return sb.toString();
 	}
 
-	String formatFilters(List<Filter> filters) {
+	String formatFilters(@Nullable List<Filter> filters) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Security filter chain: ");
 		if (filters == null) {
@@ -133,7 +134,7 @@ public final class DebugFilter implements Filter {
 		return sb.toString();
 	}
 
-	private List<Filter> getFilters(HttpServletRequest request) {
+	private @Nullable List<Filter> getFilters(HttpServletRequest request) {
 		for (SecurityFilterChain chain : this.filterChainProxy.getFilterChains()) {
 			if (chain.matches(request)) {
 				return chain.getFilters();

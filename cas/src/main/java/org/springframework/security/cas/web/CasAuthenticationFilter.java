@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpSession;
 import org.apereo.cas.client.proxy.ProxyGrantingTicketStorage;
 import org.apereo.cas.client.util.WebUtils;
 import org.apereo.cas.client.validation.TicketValidator;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
@@ -190,12 +191,12 @@ public class CasAuthenticationFilter extends AbstractAuthenticationProcessingFil
 	/**
 	 * The last portion of the receptor url, i.e. /proxy/receptor
 	 */
-	private RequestMatcher proxyReceptorMatcher;
+	private @Nullable RequestMatcher proxyReceptorMatcher;
 
 	/**
 	 * The backing storage to store ProxyGrantingTicket requests.
 	 */
-	private ProxyGrantingTicketStorage proxyGrantingTicketStorage;
+	private @Nullable ProxyGrantingTicketStorage proxyGrantingTicketStorage;
 
 	private String artifactParameter = ServiceProperties.DEFAULT_CAS_ARTIFACT_PARAMETER;
 
@@ -244,7 +245,7 @@ public class CasAuthenticationFilter extends AbstractAuthenticationProcessingFil
 	}
 
 	@Override
-	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+	public @Nullable Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException, IOException {
 		// if the request is a proxy request process it and return null to indicate the
 		// request has been processed
@@ -325,7 +326,7 @@ public class CasAuthenticationFilter extends AbstractAuthenticationProcessingFil
 	/**
 	 * Use this {@code RequestMatcher} to match proxy receptor requests. Without setting
 	 * this matcher, {@link CasAuthenticationFilter} will not capture any proxy receptor
-	 * requets.
+	 * requests.
 	 * @param proxyReceptorMatcher the {@link RequestMatcher} to use
 	 * @since 6.5
 	 */
@@ -382,8 +383,8 @@ public class CasAuthenticationFilter extends AbstractAuthenticationProcessingFil
 	}
 
 	/**
-	 * Indicates if the request is elgible to process a service ticket. This method exists
-	 * for readability.
+	 * Indicates if the request is eligible to process a service ticket. This method
+	 * exists for readability.
 	 * @param request
 	 * @param response
 	 * @return
@@ -395,7 +396,7 @@ public class CasAuthenticationFilter extends AbstractAuthenticationProcessingFil
 	}
 
 	/**
-	 * Indicates if the request is elgible to process a proxy ticket.
+	 * Indicates if the request is eligible to process a proxy ticket.
 	 * @param request
 	 * @return
 	 */
@@ -418,10 +419,11 @@ public class CasAuthenticationFilter extends AbstractAuthenticationProcessingFil
 	}
 
 	/**
-	 * Indicates if the request is elgible to be processed as the proxy receptor.
+	 * Indicates if the request is eligible to be processed as the proxy receptor.
 	 * @param request
 	 * @return
 	 */
+	@SuppressWarnings("NullAway") // Dataflow analysis limitation
 	private boolean proxyReceptorRequest(HttpServletRequest request) {
 		final boolean result = proxyReceptorConfigured() && this.proxyReceptorMatcher.matches(request);
 		this.logger.debug(LogMessage.format("proxyReceptorRequest = %s", result));

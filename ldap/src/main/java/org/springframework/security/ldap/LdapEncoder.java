@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.security.ldap;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Helper class to encode and decode ldap names and values.
  *
@@ -29,7 +31,7 @@ package org.springframework.security.ldap;
  */
 final class LdapEncoder {
 
-	private static final String[] FILTER_ESCAPE_TABLE = new String['\\' + 1];
+	private static final @Nullable String[] FILTER_ESCAPE_TABLE = new String['\\' + 1];
 
 	static {
 		// fill with char itself
@@ -56,9 +58,6 @@ final class LdapEncoder {
 	 * @return a properly escaped representation of the supplied value.
 	 */
 	static String filterEncode(String value) {
-		if (value == null) {
-			return null;
-		}
 		StringBuilder encodedValue = new StringBuilder(value.length() * 2);
 		int length = value.length();
 		for (int i = 0; i < length; i++) {

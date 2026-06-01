@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 
+import org.springframework.security.authentication.SecurityAssertions;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.jwt.BadJwtException;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -137,11 +137,7 @@ public class JwtReactiveAuthenticationManagerTests {
 		Authentication authentication = this.manager.authenticate(token).block();
 		assertThat(authentication).isNotNull();
 		assertThat(authentication.isAuthenticated()).isTrue();
-		// @formatter:off
-		assertThat(authentication.getAuthorities())
-				.extracting(GrantedAuthority::getAuthority)
-				.containsOnly("SCOPE_message:read", "SCOPE_message:write");
-		// @formatter:on
+		SecurityAssertions.assertThat(authentication).hasAuthorities("SCOPE_message:read", "SCOPE_message:write");
 	}
 
 }

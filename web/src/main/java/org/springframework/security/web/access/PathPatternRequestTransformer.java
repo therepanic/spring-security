@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.util.ServletRequestPathUtils;
@@ -51,7 +52,7 @@ public final class PathPatternRequestTransformer
 		}
 
 		@Override
-		public Object getAttribute(String name) {
+		public @Nullable Object getAttribute(String name) {
 			return this.attributes.get(name);
 		}
 

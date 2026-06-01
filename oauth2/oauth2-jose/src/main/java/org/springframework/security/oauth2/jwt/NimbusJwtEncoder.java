@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.oauth2.jose.jws.JwsAlgorithm;
@@ -136,7 +137,7 @@ public final class NimbusJwtEncoder implements JwtEncoder {
 			algorithm = MacAlgorithm.from(jwk.getAlgorithm().getName());
 		}
 		Assert.notNull(algorithm, "Failed to derive supported algorithm from " + jwk.getAlgorithm());
-		JwsHeader.Builder builder = JwsHeader.with(algorithm).type(jwk.getKeyType().getValue()).keyId(jwk.getKeyID());
+		JwsHeader.Builder builder = JwsHeader.with(algorithm).type("JWT").keyId(jwk.getKeyID());
 		URI x509Url = jwk.getX509CertURL();
 		if (x509Url != null) {
 			builder.x509Url(jwk.getX509CertURL().toASCIIString());
@@ -223,8 +224,10 @@ public final class NimbusJwtEncoder implements JwtEncoder {
 		return signedJwt.serialize();
 	}
 
-	private static JWKMatcher createJwkMatcher(JwsHeader headers) {
-		JWSAlgorithm jwsAlgorithm = JWSAlgorithm.parse(headers.getAlgorithm().getName());
+	private static @Nullable JWKMatcher createJwkMatcher(JwsHeader headers) {
+		JwsAlgorithm algorithm = headers.getAlgorithm();
+		Assert.notNull(algorithm, "JWS header algorithm must not be null");
+		JWSAlgorithm jwsAlgorithm = JWSAlgorithm.parse(algorithm.getName());
 
 		if (JWSAlgorithm.Family.RSA.contains(jwsAlgorithm) || JWSAlgorithm.Family.EC.contains(jwsAlgorithm)) {
 			// @formatter:off
@@ -283,7 +286,9 @@ public final class NimbusJwtEncoder implements JwtEncoder {
 	}
 
 	private static JWSHeader convert(JwsHeader headers) {
-		JWSHeader.Builder builder = new JWSHeader.Builder(JWSAlgorithm.parse(headers.getAlgorithm().getName()));
+		JwsAlgorithm algorithm = headers.getAlgorithm();
+		Assert.notNull(algorithm, "JWS header algorithm must not be null");
+		JWSHeader.Builder builder = new JWSHeader.Builder(JWSAlgorithm.parse(algorithm.getName()));
 
 		if (headers.getJwkSetUrl() != null) {
 			builder.jwkURL(convertAsURI(JoseHeaderNames.JKU, headers.getJwkSetUrl()));

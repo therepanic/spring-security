@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.oauth2.server.resource.introspection;
 
 import java.io.Serial;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * Base exception for all OAuth 2.0 Introspection related errors
  *
@@ -33,7 +35,7 @@ public class OAuth2IntrospectionException extends RuntimeException {
 		super(message);
 	}
 
-	public OAuth2IntrospectionException(String message, Throwable cause) {
+	public OAuth2IntrospectionException(String message, @Nullable Throwable cause) {
 		super(message, cause);
 	}
 

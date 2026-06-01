@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.messaging.web.csrf;
 
 import java.util.Base64;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.crypto.codec.Utf8;
 import org.springframework.util.Assert;
 
@@ -33,7 +35,7 @@ final class XorCsrfTokenUtils {
 	private XorCsrfTokenUtils() {
 	}
 
-	static String getTokenValue(String actualToken, String token) {
+	static @Nullable String getTokenValue(@Nullable String actualToken, String token) {
 		byte[] actualBytes;
 		try {
 			actualBytes = Base64.getUrlDecoder().decode(actualToken);

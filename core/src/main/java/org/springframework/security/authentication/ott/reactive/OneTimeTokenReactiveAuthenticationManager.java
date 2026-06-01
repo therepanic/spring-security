@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.ott.InvalidOneTimeTokenException;
+import org.springframework.security.authentication.ott.OneTimeTokenAuthentication;
 import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
@@ -59,10 +60,9 @@ public final class OneTimeTokenReactiveAuthenticationManager implements Reactive
 			.map(onSuccess(otpAuthenticationToken));
 	}
 
-	private Function<UserDetails, OneTimeTokenAuthenticationToken> onSuccess(OneTimeTokenAuthenticationToken token) {
+	private Function<UserDetails, OneTimeTokenAuthentication> onSuccess(OneTimeTokenAuthenticationToken token) {
 		return (user) -> {
-			OneTimeTokenAuthenticationToken authenticated = OneTimeTokenAuthenticationToken.authenticated(user,
-					user.getAuthorities());
+			OneTimeTokenAuthentication authenticated = new OneTimeTokenAuthentication(user, user.getAuthorities());
 			authenticated.setDetails(token.getDetails());
 			return authenticated;
 		};

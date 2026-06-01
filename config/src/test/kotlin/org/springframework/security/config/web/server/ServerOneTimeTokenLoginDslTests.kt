@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -280,11 +280,11 @@ class ServerOneTimeTokenLoginDslTests {
             this.delegate = ServerRedirectOneTimeTokenGenerationSuccessHandler("/login/ott")
         }
 
-        constructor(redirectUrl: String?) {
+        constructor(redirectUrl: String) {
             this.delegate = ServerRedirectOneTimeTokenGenerationSuccessHandler(redirectUrl)
         }
 
-        override fun handle(exchange: ServerWebExchange?, oneTimeToken: OneTimeToken?): Mono<Void> {
+        override fun handle(exchange: ServerWebExchange, oneTimeToken: OneTimeToken): Mono<Void> {
             lastToken = oneTimeToken
             return delegate!!.handle(exchange, oneTimeToken)
         }

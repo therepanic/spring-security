@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.security.config.annotation.authentication.ldap;
 
 import java.io.IOException;
 import java.net.ServerSocket;
-import java.util.Collections;
 import java.util.List;
 
 import javax.naming.directory.SearchControls;
@@ -39,7 +38,6 @@ import org.springframework.security.config.annotation.configuration.ObjectPostPr
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.ldap.DefaultSpringSecurityContextSource;
@@ -120,8 +118,7 @@ public class LdapAuthenticationProviderBuilderSecurityBuilderTests {
 		this.spring.register(BindAuthenticationConfig.class).autowire();
 
 		this.mockMvc.perform(formLogin().user("bob").password("bobspassword"))
-			.andExpect(authenticated().withUsername("bob")
-				.withAuthorities(Collections.singleton(new SimpleGrantedAuthority("ROLE_DEVELOPERS"))));
+			.andExpect(authenticated().withUsername("bob").withRoles("DEVELOPERS"));
 	}
 
 	// SEC-2472
@@ -130,8 +127,7 @@ public class LdapAuthenticationProviderBuilderSecurityBuilderTests {
 		this.spring.register(PasswordEncoderConfig.class).autowire();
 
 		this.mockMvc.perform(formLogin().user("bcrypt").password("password"))
-			.andExpect(authenticated().withUsername("bcrypt")
-				.withAuthorities(Collections.singleton(new SimpleGrantedAuthority("ROLE_DEVELOPERS"))));
+			.andExpect(authenticated().withUsername("bcrypt").withRoles("DEVELOPERS"));
 	}
 
 	private LdapAuthenticationProvider ldapProvider() {

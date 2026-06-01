@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -168,7 +168,7 @@ class ServerJwtDslTests {
     }
 
     class NullReactiveJwtDecoder: ReactiveJwtDecoder {
-        override fun decode(token: String?): Mono<Jwt> {
+        override fun decode(token: String): Mono<Jwt> {
             return Mono.empty()
         }
     }
@@ -275,7 +275,7 @@ class ServerJwtDslTests {
     }
 
     class NullConverter: Converter<Jwt, Mono<AbstractAuthenticationToken>> {
-        override fun convert(source: Jwt): Mono<AbstractAuthenticationToken>? {
+        override fun convert(source: Jwt): Mono<AbstractAuthenticationToken> {
             return Mono.empty()
         }
 

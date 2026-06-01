@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.security.web.PortResolverImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -35,7 +34,7 @@ public class SavedRequestAwareWrapperTests {
 
 	private SavedRequestAwareWrapper createWrapper(MockHttpServletRequest requestToSave,
 			MockHttpServletRequest requestToWrap) {
-		DefaultSavedRequest saved = new DefaultSavedRequest(requestToSave, new PortResolverImpl());
+		DefaultSavedRequest saved = new DefaultSavedRequest(requestToSave);
 		return new SavedRequestAwareWrapper(saved, requestToWrap);
 	}
 

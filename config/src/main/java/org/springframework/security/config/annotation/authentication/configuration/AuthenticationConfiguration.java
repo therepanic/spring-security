@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.core.log.LogMessage;
+import org.springframework.lang.Contract;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
@@ -107,7 +108,7 @@ public class AuthenticationConfiguration {
 		return new InitializeAuthenticationProviderBeanManagerConfigurer(context);
 	}
 
-	public AuthenticationManager getAuthenticationManager() throws Exception {
+	public AuthenticationManager getAuthenticationManager() {
 		if (this.authenticationManagerInitialized) {
 			return this.authenticationManager;
 		}
@@ -274,19 +275,18 @@ public class AuthenticationConfiguration {
 		}
 
 		@Override
-		public InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder> inMemoryAuthentication()
-				throws Exception {
+		public InMemoryUserDetailsManagerConfigurer<AuthenticationManagerBuilder> inMemoryAuthentication() {
 			return super.inMemoryAuthentication().passwordEncoder(this.defaultPasswordEncoder);
 		}
 
 		@Override
-		public JdbcUserDetailsManagerConfigurer<AuthenticationManagerBuilder> jdbcAuthentication() throws Exception {
+		public JdbcUserDetailsManagerConfigurer<AuthenticationManagerBuilder> jdbcAuthentication() {
 			return super.jdbcAuthentication().passwordEncoder(this.defaultPasswordEncoder);
 		}
 
 		@Override
 		public <T extends UserDetailsService> DaoAuthenticationConfigurer<AuthenticationManagerBuilder, T> userDetailsService(
-				T userDetailsService) throws Exception {
+				T userDetailsService) {
 			return super.userDetailsService(userDetailsService).passwordEncoder(this.defaultPasswordEncoder);
 		}
 
@@ -303,6 +303,7 @@ public class AuthenticationConfiguration {
 		}
 
 		@Override
+		@Contract("!null -> !null; null -> null")
 		public String encode(CharSequence rawPassword) {
 			return getPasswordEncoder().encode(rawPassword);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.security.saml2.provider.service.registration;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A repository for {@link RelyingPartyRegistration}s
  *
@@ -31,7 +33,7 @@ public interface RelyingPartyRegistrationRepository {
 	 * @param registrationId the registration identifier
 	 * @return the {@link RelyingPartyRegistration} if found, otherwise {@code null}
 	 */
-	RelyingPartyRegistration findByRegistrationId(String registrationId);
+	@Nullable RelyingPartyRegistration findByRegistrationId(String registrationId);
 
 	/**
 	 * Returns the unique relying party registration associated with the asserting party's
@@ -41,7 +43,7 @@ public interface RelyingPartyRegistrationRepository {
 	 * party; {@code null} of there is no unique match asserting party
 	 * @since 6.1
 	 */
-	default RelyingPartyRegistration findUniqueByAssertingPartyEntityId(String entityId) {
+	default @Nullable RelyingPartyRegistration findUniqueByAssertingPartyEntityId(String entityId) {
 		return findByRegistrationId(entityId);
 	}
 

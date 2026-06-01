@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,14 @@ import org.springframework.security.jackson2.SecurityJackson2Modules;
  * </pre> <b>Note: use {@link SecurityJackson2Modules#getModules(ClassLoader)} to get list
  * of all security modules on the classpath.</b>
  *
- * @author Jitendra Singh.
+ * @author Jitendra Singh
  * @since 4.2
  * @see org.springframework.security.jackson2.SecurityJackson2Modules
+ * @deprecated as of 7.0 in favor of
+ * {@link org.springframework.security.cas.jackson.CasJacksonModule} based on Jackson 3
  */
-@SuppressWarnings("serial")
+@Deprecated(forRemoval = true)
+@SuppressWarnings({ "serial", "removal" })
 public class CasJackson2Module extends SimpleModule {
 
 	public CasJackson2Module() {

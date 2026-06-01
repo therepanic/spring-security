@@ -1,4 +1,10 @@
-apply plugin: 'io.spring.convention.spring-module'
+plugins {
+	id 'io.spring.convention.spring-module'
+	id 'security-nullability'
+	id 'compile-warnings-error'
+	id 'javadoc-warnings-error'
+	id 'test-compile-target-jdk25'
+}
 
 configurations {
 	javascript {
@@ -42,6 +48,7 @@ dependencies {
 	optional 'org.springframework:spring-tx'
 	optional 'org.springframework:spring-webflux'
 	optional 'org.springframework:spring-webmvc'
+	optional 'tools.jackson.core:jackson-databind'
 	optional libs.webauthn4j.core
 
 	provided 'jakarta.servlet:jakarta.servlet-api'

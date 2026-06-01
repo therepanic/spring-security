@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,14 @@ package org.springframework.security.web.header.writers;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.web.header.HeaderWriter;
 import org.springframework.util.Assert;
 
 /**
  * Provides support for
- * <a href="https://w3c.github.io/webappsec-permissions-policy//">Permisisons Policy</a>.
+ * <a href="https://w3c.github.io/webappsec-permissions-policy//">Permissions Policy</a>.
  * <p>
  * Permissions Policy allows web developers to selectively enable, disable, and modify the
  * behavior of certain APIs and web features in the browser.
@@ -39,7 +40,7 @@ public final class PermissionsPolicyHeaderWriter implements HeaderWriter {
 
 	private static final String PERMISSIONS_POLICY_HEADER = "Permissions-Policy";
 
-	private String policy;
+	private @Nullable String policy;
 
 	/**
 	 * Create a new instance of {@link PermissionsPolicyHeaderWriter}.

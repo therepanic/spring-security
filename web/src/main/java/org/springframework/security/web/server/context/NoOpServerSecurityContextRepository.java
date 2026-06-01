@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.security.web.server.context;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.security.core.context.SecurityContext;
@@ -36,7 +37,7 @@ public final class NoOpServerSecurityContextRepository implements ServerSecurity
 	}
 
 	@Override
-	public Mono<Void> save(ServerWebExchange exchange, SecurityContext context) {
+	public Mono<Void> save(ServerWebExchange exchange, @Nullable SecurityContext context) {
 		return Mono.empty();
 	}
 

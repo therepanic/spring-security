@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -306,7 +306,9 @@ public class Saml2LogoutBeanDefinitionParserTests {
 		logoutRequest.setIssueInstant(Instant.now());
 		given(getBean(Saml2LogoutRequestValidator.class).validate(any()))
 			.willReturn(Saml2LogoutValidatorResult.success());
-		Saml2LogoutResponse logoutResponse = Saml2LogoutResponse.withRelyingPartyRegistration(registration).build();
+		Saml2LogoutResponse logoutResponse = Saml2LogoutResponse.withRelyingPartyRegistration(registration)
+			.samlResponse("samlResponse")
+			.build();
 		given(getBean(Saml2LogoutResponseResolver.class).resolve(any(), any())).willReturn(logoutResponse);
 		this.mvc
 			.perform(post("/logout/saml2/slo").param("SAMLRequest", "samlRequest").with(authentication(this.saml2User)))

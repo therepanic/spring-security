@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ package org.springframework.security.oauth2.core;
 import java.io.Serializable;
 import java.time.Instant;
 
-import org.springframework.lang.Nullable;
-import org.springframework.security.core.SpringSecurityCoreVersion;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -34,13 +34,13 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractOAuth2Token implements OAuth2Token, Serializable {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
 	private final String tokenValue;
 
-	private final Instant issuedAt;
+	private final @Nullable Instant issuedAt;
 
-	private final Instant expiresAt;
+	private final @Nullable Instant expiresAt;
 
 	/**
 	 * Sub-class constructor.
@@ -79,8 +79,7 @@ public abstract class AbstractOAuth2Token implements OAuth2Token, Serializable {
 	 * Returns the time at which the token was issued.
 	 * @return the time the token was issued or {@code null}
 	 */
-	@Nullable
-	public Instant getIssuedAt() {
+	public @Nullable Instant getIssuedAt() {
 		return this.issuedAt;
 	}
 
@@ -88,13 +87,12 @@ public abstract class AbstractOAuth2Token implements OAuth2Token, Serializable {
 	 * Returns the expiration time on or after which the token MUST NOT be accepted.
 	 * @return the token expiration time or {@code null}
 	 */
-	@Nullable
-	public Instant getExpiresAt() {
+	public @Nullable Instant getExpiresAt() {
 		return this.expiresAt;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (this == obj) {
 			return true;
 		}

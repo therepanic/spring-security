@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ public final class TokenExchangeReactiveOAuth2AuthorizedClientProvider
 		return this.subjectTokenResolver.apply(context)
 			.flatMap((subjectToken) -> this.actorTokenResolver.apply(context)
 				.map((actorToken) -> new TokenExchangeGrantRequest(clientRegistration, subjectToken, actorToken))
-				.defaultIfEmpty(new TokenExchangeGrantRequest(clientRegistration, subjectToken, null)))
+				.switchIfEmpty(Mono.just(new TokenExchangeGrantRequest(clientRegistration, subjectToken, null))))
 			.flatMap(this.accessTokenResponseClient::getTokenResponse)
 			.onErrorMap(OAuth2AuthorizationException.class,
 					(ex) -> new ClientAuthorizationException(ex.getError(), clientRegistration.getRegistrationId(), ex))
@@ -94,14 +94,16 @@ public final class TokenExchangeReactiveOAuth2AuthorizedClientProvider
 	private Mono<OAuth2Token> resolveSubjectToken(OAuth2AuthorizationContext context) {
 		// @formatter:off
 		return Mono.just(context)
-				.map((ctx) -> ctx.getPrincipal().getPrincipal())
+				.flatMap((ctx) -> Mono.justOrEmpty(ctx.getPrincipal())
+						.flatMap((auth) -> Mono.justOrEmpty(auth.getPrincipal())))
 				.filter((principal) -> principal instanceof OAuth2Token)
 				.cast(OAuth2Token.class);
 		// @formatter:on
 	}
 
 	private boolean hasTokenExpired(OAuth2Token token) {
-		return this.clock.instant().isAfter(token.getExpiresAt().minus(this.clockSkew));
+		Instant expiresAt = token.getExpiresAt();
+		return expiresAt != null && this.clock.instant().isAfter(expiresAt.minus(this.clockSkew));
 	}
 
 	/**

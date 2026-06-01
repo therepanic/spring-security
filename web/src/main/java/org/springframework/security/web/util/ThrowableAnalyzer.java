@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -71,7 +73,7 @@ public class ThrowableAnalyzer {
 
 	/**
 	 * Map of registered cause extractors. key: Class&lt;Throwable&gt;; value:
-	 * ThrowableCauseExctractor
+	 * ThrowableCauseExtractor
 	 */
 	private final Map<Class<? extends Throwable>, ThrowableCauseExtractor> extractorMap;
 
@@ -166,7 +168,7 @@ public class ThrowableAnalyzer {
 	 * @param throwable the <code>Throwable</code> (not <code>null</code>
 	 * @return the cause, may be <code>null</code> if none could be resolved
 	 */
-	private Throwable extractCause(Throwable throwable) {
+	private @Nullable Throwable extractCause(Throwable throwable) {
 		for (Map.Entry<Class<? extends Throwable>, ThrowableCauseExtractor> entry : this.extractorMap.entrySet()) {
 			Class<? extends Throwable> throwableType = entry.getKey();
 			if (throwableType.isInstance(throwable)) {
@@ -188,7 +190,8 @@ public class ThrowableAnalyzer {
 	 * @throws IllegalArgumentException if the provided type is <code>null</code> or no
 	 * subclass of <code>Throwable</code>
 	 */
-	public final Throwable getFirstThrowableOfType(Class<? extends Throwable> throwableType, Throwable[] chain) {
+	public final @Nullable Throwable getFirstThrowableOfType(Class<? extends Throwable> throwableType,
+			Throwable[] chain) {
 		if (chain != null) {
 			for (Throwable t : chain) {
 				if ((t != null) && throwableType.isInstance(t)) {
@@ -201,8 +204,8 @@ public class ThrowableAnalyzer {
 
 	/**
 	 * Verifies that the provided throwable is a valid subclass of the provided type (or
-	 * of the type itself). If <code>expectdBaseType</code> is <code>null</code>, no check
-	 * will be performed.
+	 * of the type itself). If <code>expectedBaseType</code> is <code>null</code>, no
+	 * check will be performed.
 	 * <p>
 	 * Can be used for verification purposes in implementations of
 	 * {@link ThrowableCauseExtractor extractors}.

@@ -17,6 +17,9 @@
 package org.springframework.security.web.authentication;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -24,6 +27,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -31,6 +35,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.MessageSourceAware;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.core.log.LogMessage;
+import org.springframework.lang.Contract;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -38,6 +43,7 @@ import org.springframework.security.authentication.InternalAuthenticationService
 import org.springframework.security.authentication.event.InteractiveAuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityMessageSource;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -120,7 +126,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
 		.getContextHolderStrategy();
 
-	protected ApplicationEventPublisher eventPublisher;
+	protected @Nullable ApplicationEventPublisher eventPublisher;
 
 	protected AuthenticationDetailsSource<HttpServletRequest, ?> authenticationDetailsSource = new WebAuthenticationDetailsSource();
 
@@ -129,6 +135,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 				"Please either configure an AuthenticationConverter or override attemptAuthentication when extending AbstractAuthenticationProcessingFilter");
 	};
 
+	@SuppressWarnings("NullAway.Init")
 	private AuthenticationManager authenticationManager;
 
 	protected MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
@@ -151,11 +158,13 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 
 	private SecurityContextRepository securityContextRepository = new RequestAttributeSecurityContextRepository();
 
+	private boolean mfaEnabled;
+
 	/**
 	 * @param defaultFilterProcessesUrl the default value for <tt>filterProcessesUrl</tt>.
 	 */
 	protected AbstractAuthenticationProcessingFilter(String defaultFilterProcessesUrl) {
-		setFilterProcessesUrl(defaultFilterProcessesUrl);
+		this(pathPattern(defaultFilterProcessesUrl));
 	}
 
 	/**
@@ -177,7 +186,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	 */
 	protected AbstractAuthenticationProcessingFilter(String defaultFilterProcessesUrl,
 			AuthenticationManager authenticationManager) {
-		setFilterProcessesUrl(defaultFilterProcessesUrl);
+		this(pathPattern(defaultFilterProcessesUrl));
 		setAuthenticationManager(authenticationManager);
 	}
 
@@ -246,6 +255,23 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 				// return immediately as subclass has indicated that it hasn't completed
 				return;
 			}
+			Authentication current = this.securityContextHolderStrategy.getContext().getAuthentication();
+			if (shouldPerformMfa(current, authenticationResult)) {
+				authenticationResult = authenticationResult.toBuilder()
+				// @formatter:off
+					.authorities((a) -> {
+						Set<String> newAuthorities = a.stream()
+							.map(GrantedAuthority::getAuthority)
+							.collect(Collectors.toUnmodifiableSet());
+						for (GrantedAuthority currentAuthority : current.getAuthorities()) {
+							if (!newAuthorities.contains(currentAuthority.getAuthority())) {
+								a.add(currentAuthority);
+							}
+						}
+					})
+					.build();
+					// @formatter:on
+			}
 			this.sessionStrategy.onAuthentication(authenticationResult, request, response);
 			// Authentication success
 			if (this.continueChainBeforeSuccessfulAuthentication) {
@@ -261,6 +287,29 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 			// Authentication failed
 			unsuccessfulAuthentication(request, response, ex);
 		}
+	}
+
+	@Contract("null, _ -> false")
+	private boolean shouldPerformMfa(@Nullable Authentication current, Authentication authenticationResult) {
+		if (!this.mfaEnabled) {
+			return false;
+		}
+		if (current == null || !current.isAuthenticated()) {
+			return false;
+		}
+		if (!declaresToBuilder(authenticationResult)) {
+			return false;
+		}
+		return current.getName().equals(authenticationResult.getName());
+	}
+
+	private static boolean declaresToBuilder(Authentication authentication) {
+		for (Method method : authentication.getClass().getDeclaredMethods()) {
+			if (method.getName().equals("toBuilder") && method.getParameterTypes().length == 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -305,7 +354,7 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 	 * @return the authenticated user token, or null if authentication is incomplete.
 	 * @throws AuthenticationException if authentication fails.
 	 */
-	public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+	public @Nullable Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException, IOException, ServletException {
 		Authentication authentication = this.authenticationConverter.convert(request);
 		if (authentication == null) {
@@ -445,6 +494,15 @@ public abstract class AbstractAuthenticationProcessingFilter extends GenericFilt
 
 	public void setAllowSessionCreation(boolean allowSessionCreation) {
 		this.allowSessionCreation = allowSessionCreation;
+	}
+
+	/**
+	 * Enables Multi-Factor Authentication (MFA) support.
+	 * @param mfaEnabled true to enable MFA support, false to disable it. Default is
+	 * false.
+	 */
+	public void setMfaEnabled(boolean mfaEnabled) {
+		this.mfaEnabled = mfaEnabled;
 	}
 
 	/**

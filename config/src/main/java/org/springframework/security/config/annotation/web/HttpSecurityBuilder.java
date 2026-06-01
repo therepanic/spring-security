@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,7 @@ public interface HttpSecurityBuilder<H extends HttpSecurityBuilder<H>>
 	<C> void setSharedObject(Class<C> sharedType, C object);
 
 	/**
-	 * Gets a shared Object. Note that object heirarchies are not considered.
+	 * Gets a shared Object. Note that object hierarchies are not considered.
 	 * @param sharedType the type of the shared Object
 	 * @return the shared Object or null if it is not found
 	 */

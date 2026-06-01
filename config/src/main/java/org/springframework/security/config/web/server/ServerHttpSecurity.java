@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1316,6 +1316,10 @@ public class ServerHttpSecurity {
 		return this.context.getBeanNamesForType(beanClass);
 	}
 
+	ApplicationContext getApplicationContext() {
+		return this.context;
+	}
+
 	protected void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
 		this.context = applicationContext;
 	}
@@ -2158,7 +2162,7 @@ public class ServerHttpSecurity {
 	 *
 	 * @author Evgeniy Cheban
 	 * @since 5.6
-	 * @see #passwordManagement()
+	 * @see #passwordManagement(Customizer)
 	 */
 	public final class PasswordManagementSpec {
 
@@ -2659,7 +2663,7 @@ public class ServerHttpSecurity {
 		/**
 		 * Configures cache control headers
 		 *
-		 * @see #cache()
+		 * @see HeaderSpec#cache(Customizer)
 		 */
 		public final class CacheSpec {
 
@@ -2680,7 +2684,7 @@ public class ServerHttpSecurity {
 		/**
 		 * The content type headers
 		 *
-		 * @see #contentTypeOptions()
+		 * @see HeaderSpec#contentTypeOptions(Customizer)
 		 */
 		public final class ContentTypeOptionsSpec {
 
@@ -2701,7 +2705,7 @@ public class ServerHttpSecurity {
 		/**
 		 * Configures frame options response header
 		 *
-		 * @see #frameOptions()
+		 * @see HeaderSpec#frameOptions(Customizer)
 		 */
 		public final class FrameOptionsSpec {
 
@@ -2733,7 +2737,7 @@ public class ServerHttpSecurity {
 		/**
 		 * Configures Strict Transport Security response header
 		 *
-		 * @see #hsts()
+		 * @see HeaderSpec#hsts(Customizer)
 		 */
 		public final class HstsSpec {
 
@@ -2792,7 +2796,7 @@ public class ServerHttpSecurity {
 		/**
 		 * Configures x-xss-protection response header
 		 *
-		 * @see #xssProtection()
+		 * @see HeaderSpec#xssProtection(Customizer)
 		 */
 		public final class XssProtectionSpec {
 
@@ -2826,7 +2830,7 @@ public class ServerHttpSecurity {
 		 * Configures {@code Content-Security-Policy} response header.
 		 *
 		 * @since 5.1
-		 * @see #contentSecurityPolicy(String)
+		 * @see HeaderSpec#contentSecurityPolicy(Customizer)
 		 */
 		public final class ContentSecurityPolicySpec {
 
@@ -2880,8 +2884,7 @@ public class ServerHttpSecurity {
 			 * Allows method chaining to continue configuring the
 			 * {@link ServerHttpSecurity}.
 			 * @return the {@link HeaderSpec} to continue configuring
-			 * @deprecated For removal in 7.0. Use {@link #featurePolicy(Customizer)}
-			 * instead
+			 * @deprecated For removal in 7.0. Use {@link #featurePolicy(String)} instead
 			 */
 			@Deprecated(since = "6.1", forRemoval = true)
 			public HeaderSpec and() {
@@ -2894,7 +2897,7 @@ public class ServerHttpSecurity {
 		 * Configures {@code Permissions-Policy} response header.
 		 *
 		 * @since 5.5
-		 * @see #permissionsPolicy()
+		 * @see HeaderSpec#permissionsPolicy(Customizer)
 		 */
 		public final class PermissionsPolicySpec {
 
@@ -2917,8 +2920,7 @@ public class ServerHttpSecurity {
 		 * Configures {@code Referrer-Policy} response header.
 		 *
 		 * @since 5.1
-		 * @see #referrerPolicy()
-		 * @see #referrerPolicy(ReferrerPolicy)
+		 * @see HeaderSpec#referrerPolicy(Customizer)
 		 */
 		public final class ReferrerPolicySpec {
 
@@ -3029,7 +3031,8 @@ public class ServerHttpSecurity {
 
 		/**
 		 * Configures the logout handler. Default is
-		 * {@code SecurityContextServerLogoutHandler}
+		 * {@code SecurityContextServerLogoutHandler}. This clears any previous handlers
+		 * configured.
 		 * @param logoutHandler
 		 * @return the {@link LogoutSpec} to configure
 		 */
@@ -3042,6 +3045,18 @@ public class ServerHttpSecurity {
 		private LogoutSpec addLogoutHandler(ServerLogoutHandler logoutHandler) {
 			Assert.notNull(logoutHandler, "logoutHandler cannot be null");
 			this.logoutHandlers.add(logoutHandler);
+			return this;
+		}
+
+		/**
+		 * Allows managing the list of {@link ServerLogoutHandler} instances.
+		 * @param handlersConsumer {@link Consumer} for managing the list of handlers.
+		 * @return the {@link LogoutSpec} to configure
+		 * @since 7.0
+		 */
+		public LogoutSpec logoutHandler(Consumer<List<ServerLogoutHandler>> handlersConsumer) {
+			Assert.notNull(handlersConsumer, "consumer cannot be null");
+			handlersConsumer.accept(this.logoutHandlers);
 			return this;
 		}
 
@@ -3214,6 +3229,8 @@ public class ServerHttpSecurity {
 
 		private ReactiveAuthenticationManager authenticationManager;
 
+		private ServerAuthenticationConverter serverAuthenticationConverter;
+
 		private X509Spec() {
 		}
 
@@ -3227,11 +3244,17 @@ public class ServerHttpSecurity {
 			return this;
 		}
 
+		public X509Spec serverAuthenticationConverter(ServerAuthenticationConverter serverAuthenticationConverter) {
+			this.serverAuthenticationConverter = serverAuthenticationConverter;
+			return this;
+		}
+
 		protected void configure(ServerHttpSecurity http) {
 			ReactiveAuthenticationManager authenticationManager = getAuthenticationManager();
 			X509PrincipalExtractor principalExtractor = getPrincipalExtractor();
+			ServerAuthenticationConverter converter = getServerAuthenticationConverter(principalExtractor);
 			AuthenticationWebFilter filter = new AuthenticationWebFilter(authenticationManager);
-			filter.setServerAuthenticationConverter(new ServerX509AuthenticationConverter(principalExtractor));
+			filter.setServerAuthenticationConverter(converter);
 			http.addFilterAt(filter, SecurityWebFiltersOrder.AUTHENTICATION);
 		}
 
@@ -3248,6 +3271,13 @@ public class ServerHttpSecurity {
 			}
 			ReactiveUserDetailsService userDetailsService = getBean(ReactiveUserDetailsService.class);
 			return new ReactivePreAuthenticatedAuthenticationManager(userDetailsService);
+		}
+
+		private ServerAuthenticationConverter getServerAuthenticationConverter(X509PrincipalExtractor extractor) {
+			if (this.serverAuthenticationConverter != null) {
+				return this.serverAuthenticationConverter;
+			}
+			return new ServerX509AuthenticationConverter(extractor);
 		}
 
 	}

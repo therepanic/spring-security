@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.oauth2.core;
 
 import java.io.Serial;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -77,22 +79,25 @@ public class OAuth2AuthenticationException extends AuthenticationException {
 	/**
 	 * Constructs an {@code OAuth2AuthenticationException} using the provided parameters.
 	 * @param error the {@link OAuth2Error OAuth 2.0 Error}
-	 * @param message the detail message
+	 * @param message the detail message, may be {@code null}
 	 */
-	public OAuth2AuthenticationException(OAuth2Error error, String message) {
+	public OAuth2AuthenticationException(OAuth2Error error, @Nullable String message) {
 		this(error, message, null);
 	}
 
 	/**
 	 * Constructs an {@code OAuth2AuthenticationException} using the provided parameters.
 	 * @param error the {@link OAuth2Error OAuth 2.0 Error}
-	 * @param message the detail message
-	 * @param cause the root cause
+	 * @param message the detail message, may be {@code null}
+	 * @param cause the root cause, may be {@code null}
 	 */
-	public OAuth2AuthenticationException(OAuth2Error error, String message, Throwable cause) {
-		super(message, cause);
+	public OAuth2AuthenticationException(OAuth2Error error, @Nullable String message, @Nullable Throwable cause) {
+		super(message);
 		Assert.notNull(error, "error cannot be null");
 		this.error = error;
+		if (cause != null) {
+			initCause(cause);
+		}
 	}
 
 	/**

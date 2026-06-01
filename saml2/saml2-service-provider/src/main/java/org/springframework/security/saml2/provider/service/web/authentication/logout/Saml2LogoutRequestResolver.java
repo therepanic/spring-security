@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.saml2.provider.service.web.authentication.logout;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutRequest;
@@ -44,6 +45,6 @@ public interface Saml2LogoutRequestResolver {
 	 * @param authentication the current user
 	 * @return a signed and serialized SAML 2.0 Logout Request
 	 */
-	Saml2LogoutRequest resolve(HttpServletRequest request, Authentication authentication);
+	@Nullable Saml2LogoutRequest resolve(HttpServletRequest request, Authentication authentication);
 
 }

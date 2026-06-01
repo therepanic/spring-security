@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -111,8 +111,6 @@ final class OAuth2LoginBeanDefinitionParser implements BeanDefinitionParser {
 
 	private final BeanReference portMapper;
 
-	private final BeanReference portResolver;
-
 	private final BeanReference sessionStrategy;
 
 	private final boolean allowSessionCreation;
@@ -131,12 +129,10 @@ final class OAuth2LoginBeanDefinitionParser implements BeanDefinitionParser {
 
 	private BeanDefinition oauth2LoginLinks;
 
-	OAuth2LoginBeanDefinitionParser(BeanReference requestCache, BeanReference portMapper, BeanReference portResolver,
-			BeanReference sessionStrategy, boolean allowSessionCreation,
-			BeanMetadataElement authenticationFilterSecurityContextHolderStrategy) {
+	OAuth2LoginBeanDefinitionParser(BeanReference requestCache, BeanReference portMapper, BeanReference sessionStrategy,
+			boolean allowSessionCreation, BeanMetadataElement authenticationFilterSecurityContextHolderStrategy) {
 		this.requestCache = requestCache;
 		this.portMapper = portMapper;
-		this.portResolver = portResolver;
 		this.sessionStrategy = sessionStrategy;
 		this.allowSessionCreation = allowSessionCreation;
 		this.authenticationFilterSecurityContextHolderStrategy = authenticationFilterSecurityContextHolderStrategy;
@@ -231,7 +227,6 @@ final class OAuth2LoginBeanDefinitionParser implements BeanDefinitionParser {
 				.rootBeanDefinition(LoginUrlAuthenticationEntryPoint.class)
 				.addConstructorArgValue(loginPage)
 				.addPropertyValue("portMapper", this.portMapper)
-				.addPropertyValue("portResolver", this.portResolver)
 				.getBeanDefinition();
 		}
 		else {

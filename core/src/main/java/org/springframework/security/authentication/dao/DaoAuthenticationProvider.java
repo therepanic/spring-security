@@ -16,7 +16,10 @@
 
 package org.springframework.security.authentication.dao;
 
+import java.util.Objects;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -41,6 +44,7 @@ import org.springframework.util.function.SingletonSupplier;
  *
  * @author Ben Alex
  * @author Rob Winch
+ * @author Andrey Litvitski
  */
 public class DaoAuthenticationProvider extends AbstractUserDetailsAuthenticationProvider {
 
@@ -60,15 +64,16 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 	 * {@link PasswordEncoder} implementations will short circuit if the password is not
 	 * in a valid format.
 	 */
-	private volatile String userNotFoundEncodedPassword;
+	private volatile @Nullable String userNotFoundEncodedPassword;
 
-	private UserDetailsService userDetailsService;
+	private final UserDetailsService userDetailsService;
 
-	private UserDetailsPasswordService userDetailsPasswordService;
+	private UserDetailsPasswordService userDetailsPasswordService = UserDetailsPasswordService.NOOP;
 
-	private CompromisedPasswordChecker compromisedPasswordChecker;
+	private @Nullable CompromisedPasswordChecker compromisedPasswordChecker;
 
 	public DaoAuthenticationProvider(UserDetailsService userDetailsService) {
+		Assert.notNull(userDetailsService, "userDetailsService cannot be null");
 		this.userDetailsService = userDetailsService;
 	}
 
@@ -120,14 +125,17 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 	@Override
 	protected Authentication createSuccessAuthentication(Object principal, Authentication authentication,
 			UserDetails user) {
+		Assert.notNull(authentication.getCredentials(), "Authentication.getCredentials() cannot be null");
 		String presentedPassword = authentication.getCredentials().toString();
 		boolean isPasswordCompromised = this.compromisedPasswordChecker != null
 				&& this.compromisedPasswordChecker.check(presentedPassword).isCompromised();
 		if (isPasswordCompromised) {
 			throw new CompromisedPasswordException("The provided password is compromised, please change your password");
 		}
-		boolean upgradeEncoding = this.userDetailsPasswordService != null
-				&& this.passwordEncoder.get().upgradeEncoding(user.getPassword());
+		String existingEncodedPassword = user.getPassword();
+		boolean upgradeEncoding = existingEncodedPassword != null
+				&& !Objects.equals(this.userDetailsPasswordService, UserDetailsPasswordService.NOOP)
+				&& this.passwordEncoder.get().upgradeEncoding(existingEncodedPassword);
 		if (upgradeEncoding) {
 			String newPassword = this.passwordEncoder.get().encode(presentedPassword);
 			user = this.userDetailsPasswordService.updatePassword(user, newPassword);
@@ -143,6 +151,7 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 
 	private void mitigateAgainstTimingAttack(UsernamePasswordAuthenticationToken authentication) {
 		if (authentication.getCredentials() != null) {
+			Assert.notNull(this.userNotFoundEncodedPassword, "userNotFoundEncodedPassword cannot be null");
 			String presentedPassword = authentication.getCredentials().toString();
 			this.passwordEncoder.get().matches(presentedPassword, this.userNotFoundEncodedPassword);
 		}
@@ -170,6 +179,7 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 	}
 
 	public void setUserDetailsPasswordService(UserDetailsPasswordService userDetailsPasswordService) {
+		Assert.notNull(userDetailsPasswordService, "userDetailsPasswordService cannot be null");
 		this.userDetailsPasswordService = userDetailsPasswordService;
 	}
 
@@ -180,6 +190,7 @@ public class DaoAuthenticationProvider extends AbstractUserDetailsAuthentication
 	 * @since 6.3
 	 */
 	public void setCompromisedPasswordChecker(CompromisedPasswordChecker compromisedPasswordChecker) {
+		Assert.notNull(compromisedPasswordChecker, "compromisedPasswordChecker cannot be null");
 		this.compromisedPasswordChecker = compromisedPasswordChecker;
 	}
 

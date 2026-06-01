@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.security.authorization;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.Authentication;
 
@@ -58,7 +60,8 @@ public final class AuthorizationManagers {
 	@SafeVarargs
 	public static <T> AuthorizationManager<T> anyOf(AuthorizationDecision allAbstainDefaultDecision,
 			AuthorizationManager<T>... managers) {
-		return (AuthorizationManagerCheckAdapter<T>) (authentication, object) -> {
+		return (AuthorizationManagerCheckAdapter<T>) (Supplier<? extends @Nullable Authentication> authentication,
+				T object) -> {
 			List<AuthorizationResult> results = new ArrayList<>();
 			for (AuthorizationManager<T> manager : managers) {
 				AuthorizationResult result = manager.authorize(authentication, object);
@@ -104,7 +107,8 @@ public final class AuthorizationManagers {
 	@SafeVarargs
 	public static <T> AuthorizationManager<T> allOf(AuthorizationDecision allAbstainDefaultDecision,
 			AuthorizationManager<T>... managers) {
-		return (AuthorizationManagerCheckAdapter<T>) (authentication, object) -> {
+		return (AuthorizationManagerCheckAdapter<T>) (Supplier<? extends @Nullable Authentication> authentication,
+				T object) -> {
 			List<AuthorizationResult> results = new ArrayList<>();
 			for (AuthorizationManager<T> manager : managers) {
 				AuthorizationResult result = manager.authorize(authentication, object);
@@ -133,7 +137,7 @@ public final class AuthorizationManagers {
 	 * @since 6.3
 	 */
 	public static <T> AuthorizationManager<T> not(AuthorizationManager<T> manager) {
-		return (authentication, object) -> {
+		return (Supplier<? extends @Nullable Authentication> authentication, T object) -> {
 			AuthorizationResult result = manager.authorize(authentication, object);
 			if (result == null) {
 				return null;
@@ -182,7 +186,7 @@ public final class AuthorizationManagers {
 	private interface AuthorizationManagerCheckAdapter<T> extends AuthorizationManager<T> {
 
 		@Override
-		AuthorizationResult authorize(Supplier<Authentication> authentication, T object);
+		AuthorizationResult authorize(Supplier<? extends @Nullable Authentication> authentication, T object);
 
 	}
 

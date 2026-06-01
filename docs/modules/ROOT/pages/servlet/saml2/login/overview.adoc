@@ -49,7 +49,7 @@ This filter calls its configured `AuthenticationConverter` to create a `Saml2Aut
 This converter additionally resolves the <<servlet-saml2login-relyingpartyregistration, `RelyingPartyRegistration`>> and supplies it to `Saml2AuthenticationToken`.
 
 image:{icondir}/number_2.png[] Next, the filter passes the token to its configured xref:servlet/authentication/architecture.adoc#servlet-authentication-providermanager[`AuthenticationManager`].
-By default, it uses the <<servlet-saml2login-architecture,`OpenSaml4AuthenticationProvider`>>.
+By default, it uses the <<servlet-saml2login-architecture,`OpenSaml5AuthenticationProvider`>>.
 
 image:{icondir}/number_3.png[] If authentication fails, then _Failure_.
 
@@ -78,7 +78,11 @@ Maven::
     <!-- ... -->
     <repository>
         <id>shibboleth-releases</id>
-        <url>https://build.shibboleth.net/nexus/content/repositories/releases/</url>
+        <name>Shibboleth Releases Repository</name>
+        <url>https://build.shibboleth.net/maven/releases/</url>
+        <snapshots>
+            <enabled>false</enabled>
+        </snapshots>
     </repository>
 </repositories>
 <dependency>
@@ -211,14 +215,14 @@ If any signature is invalid, authentication fails.
 Also, if neither the response nor the assertions have signatures, authentication fails.
 Either the response or all the assertions must have signatures.
 
-image:{icondir}/number_7.png[] Then, the provider xref:servlet/saml2/login/authentication.adoc#servlet-saml2login-opensamlauthenticationprovider-decryption[,]decrypts any `EncryptedID` or `EncryptedAttribute` elements].
+image:{icondir}/number_7.png[] Then, the provider xref:servlet/saml2/login/authentication.adoc#servlet-saml2login-opensamlauthenticationprovider-decryption[decrypts any `EncryptedID` or `EncryptedAttribute` elements].
 If any decryptions fail, authentication fails.
 
 image:{icondir}/number_8.png[] Next, the provider validates each assertion's `ExpiresAt` and `NotBefore` timestamps, the `<Subject>` and any `<AudienceRestriction>` conditions.
 If any validations fail, authentication fails.
 
 image:{icondir}/number_9.png[] Following that, the provider takes the first assertion's `AttributeStatement` and maps it to a `Map<String, List<Object>>`.
-It also grants the `ROLE_USER` granted authority.
+It also grants the `FACTOR_SAML_RESPONSE` and `ROLE_USER` granted authorities.
 
 image:{icondir}/number_10.png[] And finally, it takes the `NameID` from the first assertion, the `Map` of attributes, and the `GrantedAuthority` and constructs a `Saml2AuthenticatedPrincipal`.
 Then, it places that principal and the authorities into a `Saml2Authentication`.
@@ -1035,4 +1039,4 @@ You can see a completed example of this in {gh-samples-url}/servlet/spring-boot/
 
 In the event that you are migrating from the Spring Security SAML Extension, there may be some benefit to configuring your application to use the SAML Extension URI defaults.
 
-For more information on this, please see {gh-samples-url}/servlet/spring-boot/java/saml2/custom-urls[our `custom-urls` sample] and {gh-samples-url}/servlet/spring-boot/java/saml2/saml-extension-federation[our `saml-extension-federation` sample].
+For more information on this, please see {gh-samples-url}/servlet/spring-boot/java/saml2/saml-extension-urls[our `saml-extension-urls` sample] and {gh-samples-url}/servlet/spring-boot/java/saml2/saml-extension-federation[our `saml-extension-federation` sample].

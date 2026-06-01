@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.SpringSecurityCoreVersion;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.util.Assert;
 
@@ -50,7 +51,7 @@ import org.springframework.util.Assert;
  */
 public class DefaultOAuth2User implements OAuth2User, Serializable {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
 	private final Set<GrantedAuthority> authorities;
 
@@ -60,18 +61,17 @@ public class DefaultOAuth2User implements OAuth2User, Serializable {
 
 	/**
 	 * Constructs a {@code DefaultOAuth2User} using the provided parameters.
-	 * @param authorities the authorities granted to the user
+	 * @param authorities the authorities granted to the user, may be {@code null}
 	 * @param attributes the attributes about the user
 	 * @param nameAttributeKey the key used to access the user's &quot;name&quot; from
 	 * {@link #getAttributes()}
 	 */
-	public DefaultOAuth2User(Collection<? extends GrantedAuthority> authorities, Map<String, Object> attributes,
-			String nameAttributeKey) {
+	public DefaultOAuth2User(@Nullable Collection<? extends GrantedAuthority> authorities,
+			Map<String, Object> attributes, String nameAttributeKey) {
 		Assert.notEmpty(attributes, "attributes cannot be empty");
 		Assert.hasText(nameAttributeKey, "nameAttributeKey cannot be empty");
 		Assert.notNull(attributes.get(nameAttributeKey),
 				"Attribute value for '" + nameAttributeKey + "' cannot be null");
-
 		this.authorities = (authorities != null)
 				? Collections.unmodifiableSet(new LinkedHashSet<>(this.sortAuthorities(authorities)))
 				: Collections.unmodifiableSet(new LinkedHashSet<>(AuthorityUtils.NO_AUTHORITIES));
@@ -81,7 +81,9 @@ public class DefaultOAuth2User implements OAuth2User, Serializable {
 
 	@Override
 	public String getName() {
-		return this.getAttribute(this.nameAttributeKey).toString();
+		Object nameAttributeValue = this.getAttribute(this.nameAttributeKey);
+		Assert.notNull(nameAttributeValue, "name attribute value cannot be null");
+		return nameAttributeValue.toString();
 	}
 
 	@Override
@@ -102,7 +104,7 @@ public class DefaultOAuth2User implements OAuth2User, Serializable {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (this == obj) {
 			return true;
 		}

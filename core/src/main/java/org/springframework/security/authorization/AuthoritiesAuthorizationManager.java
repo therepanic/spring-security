@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.authorization;
 
 import java.util.Collection;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.access.hierarchicalroles.NullRoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -55,7 +57,8 @@ public final class AuthoritiesAuthorizationManager implements AuthorizationManag
 	 * @return an {@link AuthorityAuthorizationDecision}
 	 */
 	@Override
-	public AuthorizationResult authorize(Supplier<Authentication> authentication, Collection<String> authorities) {
+	public AuthorizationResult authorize(Supplier<? extends @Nullable Authentication> authentication,
+			Collection<String> authorities) {
 		boolean granted = isGranted(authentication.get(), authorities);
 		return new AuthorityAuthorizationDecision(granted, AuthorityUtils.createAuthorityList(authorities));
 	}
@@ -66,7 +69,11 @@ public final class AuthoritiesAuthorizationManager implements AuthorizationManag
 
 	private boolean isAuthorized(Authentication authentication, Collection<String> authorities) {
 		for (GrantedAuthority grantedAuthority : getGrantedAuthorities(authentication)) {
-			if (authorities.contains(grantedAuthority.getAuthority())) {
+			String authority = grantedAuthority.getAuthority();
+			if (authority == null) {
+				continue;
+			}
+			if (authorities.contains(authority)) {
 				return true;
 			}
 		}

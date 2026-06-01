@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.security.data.repository.query;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.data.spel.spi.EvaluationContextExtension;
 import org.springframework.security.access.PermissionEvaluator;
 import org.springframework.security.access.expression.DenyAllPermissionEvaluator;
@@ -24,6 +26,8 @@ import org.springframework.security.access.hierarchicalroles.NullRoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authorization.AuthorizationManagerFactory;
+import org.springframework.security.authorization.DefaultAuthorizationManagerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -90,18 +94,18 @@ import org.springframework.util.Assert;
  */
 public class SecurityEvaluationContextExtension implements EvaluationContextExtension {
 
+	private static final String DEFAULT_ROLE_PREFIX = "ROLE_";
+
 	private SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder
 		.getContextHolderStrategy();
 
-	private Authentication authentication;
+	private @Nullable Authentication authentication;
 
-	private AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
-
-	private RoleHierarchy roleHierarchy = new NullRoleHierarchy();
+	private AuthorizationManagerFactory<Object> authorizationManagerFactory = new DefaultAuthorizationManagerFactory<>();
 
 	private PermissionEvaluator permissionEvaluator = new DenyAllPermissionEvaluator();
 
-	private String defaultRolePrefix = "ROLE_";
+	private String defaultRolePrefix = DEFAULT_ROLE_PREFIX;
 
 	/**
 	 * Creates a new instance that uses the current {@link Authentication} found on the
@@ -114,7 +118,7 @@ public class SecurityEvaluationContextExtension implements EvaluationContextExte
 	 * Creates a new instance that always uses the same {@link Authentication} object.
 	 * @param authentication the {@link Authentication} to use
 	 */
-	public SecurityEvaluationContextExtension(Authentication authentication) {
+	public SecurityEvaluationContextExtension(@Nullable Authentication authentication) {
 		this.authentication = authentication;
 	}
 
@@ -124,21 +128,24 @@ public class SecurityEvaluationContextExtension implements EvaluationContextExte
 	}
 
 	@Override
-	public SecurityExpressionRoot getRootObject() {
+	public SecurityExpressionRoot<Object> getRootObject() {
 		Authentication authentication = getAuthentication();
-		SecurityExpressionRoot root = new SecurityExpressionRoot(authentication) {
+		SecurityExpressionRoot<Object> root = new SecurityExpressionRoot<>(() -> authentication, new Object()) {
 		};
-		root.setTrustResolver(this.trustResolver);
-		root.setRoleHierarchy(this.roleHierarchy);
+		root.setAuthorizationManagerFactory(this.authorizationManagerFactory);
 		root.setPermissionEvaluator(this.permissionEvaluator);
-		root.setDefaultRolePrefix(this.defaultRolePrefix);
+		if (!DEFAULT_ROLE_PREFIX.equals(this.defaultRolePrefix)) {
+			// Ensure SecurityExpressionRoot can strip the custom role prefix
+			root.setDefaultRolePrefix(this.defaultRolePrefix);
+		}
 		return root;
 	}
 
 	/**
 	 * Sets the {@link SecurityContextHolderStrategy} to use. The default action is to use
 	 * the {@link SecurityContextHolderStrategy} stored in {@link SecurityContextHolder}.
-	 *
+	 * @param securityContextHolderStrategy the {@link SecurityContextHolderStrategy} to
+	 * use. Cannot be null.
 	 * @since 5.8
 	 */
 	public void setSecurityContextHolderStrategy(SecurityContextHolderStrategy securityContextHolderStrategy) {
@@ -146,7 +153,7 @@ public class SecurityEvaluationContextExtension implements EvaluationContextExte
 		this.securityContextHolderStrategy = securityContextHolderStrategy;
 	}
 
-	private Authentication getAuthentication() {
+	private @Nullable Authentication getAuthentication() {
 		if (this.authentication != null) {
 			return this.authentication;
 		}
@@ -155,14 +162,45 @@ public class SecurityEvaluationContextExtension implements EvaluationContextExte
 	}
 
 	/**
+	 * Sets the {@link AuthorizationManagerFactory} to be used. The default is
+	 * {@link DefaultAuthorizationManagerFactory}.
+	 * @param authorizationManagerFactory the {@link AuthorizationManagerFactory} to use.
+	 * Cannot be null.
+	 * @since 7.0
+	 */
+	public void setAuthorizationManagerFactory(AuthorizationManagerFactory<Object> authorizationManagerFactory) {
+		Assert.notNull(authorizationManagerFactory, "authorizationManagerFactory cannot be null");
+		this.authorizationManagerFactory = authorizationManagerFactory;
+	}
+
+	/**
+	 * Allows accessing the {@link DefaultAuthorizationManagerFactory} for getting and
+	 * setting defaults. This method will be removed in Spring Security 8.
+	 * @return the {@link DefaultAuthorizationManagerFactory}
+	 * @throws IllegalStateException if a different {@link AuthorizationManagerFactory}
+	 * was already set
+	 */
+	private DefaultAuthorizationManagerFactory<Object> getDefaultAuthorizationManagerFactory() {
+		if (!(this.authorizationManagerFactory instanceof DefaultAuthorizationManagerFactory<Object> defaultAuthorizationManagerFactory)) {
+			throw new IllegalStateException(
+					"authorizationManagerFactory must be an instance of DefaultAuthorizationManagerFactory");
+		}
+
+		return defaultAuthorizationManagerFactory;
+	}
+
+	/**
 	 * Sets the {@link AuthenticationTrustResolver} to be used. Default is
 	 * {@link AuthenticationTrustResolverImpl}. Cannot be null.
 	 * @param trustResolver the {@link AuthenticationTrustResolver} to use
 	 * @since 5.8
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
+	@Deprecated(since = "7.0")
 	public void setTrustResolver(AuthenticationTrustResolver trustResolver) {
 		Assert.notNull(trustResolver, "trustResolver cannot be null");
-		this.trustResolver = trustResolver;
+		getDefaultAuthorizationManagerFactory().setTrustResolver(trustResolver);
 	}
 
 	/**
@@ -170,10 +208,13 @@ public class SecurityEvaluationContextExtension implements EvaluationContextExte
 	 * Cannot be null.
 	 * @param roleHierarchy the {@link RoleHierarchy} to use
 	 * @since 5.8
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
+	@Deprecated(since = "7.0")
 	public void setRoleHierarchy(RoleHierarchy roleHierarchy) {
 		Assert.notNull(roleHierarchy, "roleHierarchy cannot be null");
-		this.roleHierarchy = roleHierarchy;
+		getDefaultAuthorizationManagerFactory().setRoleHierarchy(roleHierarchy);
 	}
 
 	/**
@@ -197,8 +238,12 @@ public class SecurityEvaluationContextExtension implements EvaluationContextExte
 	 * @param defaultRolePrefix the default prefix to add to roles. The default is
 	 * "ROLE_".
 	 * @since 5.8
+	 * @deprecated Use
+	 * {@link #setAuthorizationManagerFactory(AuthorizationManagerFactory)} instead
 	 */
+	@Deprecated(since = "7.0")
 	public void setDefaultRolePrefix(String defaultRolePrefix) {
+		getDefaultAuthorizationManagerFactory().setRolePrefix(defaultRolePrefix);
 		this.defaultRolePrefix = defaultRolePrefix;
 	}
 

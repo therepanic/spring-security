@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,8 @@
 package org.springframework.security.web.authentication.ott;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
-import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.ott.GenerateOneTimeTokenRequest;
 
 /**
@@ -35,7 +35,6 @@ public interface GenerateOneTimeTokenRequestResolver {
 	 * @param request {@link HttpServletRequest} to resolve
 	 * @return {@link GenerateOneTimeTokenRequest}
 	 */
-	@Nullable
-	GenerateOneTimeTokenRequest resolve(HttpServletRequest request);
+	@Nullable GenerateOneTimeTokenRequest resolve(HttpServletRequest request);
 
 }

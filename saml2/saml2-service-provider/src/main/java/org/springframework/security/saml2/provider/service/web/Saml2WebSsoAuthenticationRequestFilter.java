@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.MediaType;
 import org.springframework.security.saml2.core.Saml2ParameterNames;
@@ -121,7 +122,7 @@ public class Saml2WebSsoAuthenticationRequestFilter extends OncePerRequestFilter
 		response.sendRedirect(redirectUrl);
 	}
 
-	private void addParameter(String name, String value, UriComponentsBuilder builder) {
+	private void addParameter(String name, @Nullable String value, UriComponentsBuilder builder) {
 		Assert.hasText(name, "name cannot be empty or null");
 		if (StringUtils.hasText(value)) {
 			builder.queryParam(UriUtils.encode(name, StandardCharsets.ISO_8859_1),

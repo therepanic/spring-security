@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,26 +18,32 @@ package org.springframework.security.oauth2.client.jackson2;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.util.StdConverter;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.oauth2.core.AuthenticationMethod;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
+import org.springframework.util.Assert;
 
 /**
  * {@code StdConverter} implementations.
  *
  * @author Joe Grandja
  * @since 5.3
+ * @deprecated as of 7.0 in favor of
+ * {@code org.springframework.security.oauth2.client.jackson.StdConverters} based on
+ * Jackson 3
  */
+@Deprecated(forRemoval = true)
 abstract class StdConverters {
 
 	static final class AccessTokenTypeConverter extends StdConverter<JsonNode, OAuth2AccessToken.TokenType> {
 
 		@Override
-		public OAuth2AccessToken.TokenType convert(JsonNode jsonNode) {
+		public OAuth2AccessToken.@Nullable TokenType convert(JsonNode jsonNode) {
 			String value = JsonNodeUtils.findStringValue(jsonNode, "value");
-			if (OAuth2AccessToken.TokenType.BEARER.getValue().equalsIgnoreCase(value)) {
+			if (value != null && OAuth2AccessToken.TokenType.BEARER.getValue().equalsIgnoreCase(value)) {
 				return OAuth2AccessToken.TokenType.BEARER;
 			}
 			return null;
@@ -50,6 +56,7 @@ abstract class StdConverters {
 		@Override
 		public ClientAuthenticationMethod convert(JsonNode jsonNode) {
 			String value = JsonNodeUtils.findStringValue(jsonNode, "value");
+			Assert.hasText(value, "value cannot be null or empty");
 			return ClientAuthenticationMethod.valueOf(value);
 		}
 
@@ -60,6 +67,7 @@ abstract class StdConverters {
 		@Override
 		public AuthorizationGrantType convert(JsonNode jsonNode) {
 			String value = JsonNodeUtils.findStringValue(jsonNode, "value");
+			Assert.hasText(value, "value cannot be null or empty");
 			if (AuthorizationGrantType.AUTHORIZATION_CODE.getValue().equalsIgnoreCase(value)) {
 				return AuthorizationGrantType.AUTHORIZATION_CODE;
 			}
@@ -74,15 +82,15 @@ abstract class StdConverters {
 	static final class AuthenticationMethodConverter extends StdConverter<JsonNode, AuthenticationMethod> {
 
 		@Override
-		public AuthenticationMethod convert(JsonNode jsonNode) {
+		public @Nullable AuthenticationMethod convert(JsonNode jsonNode) {
 			String value = JsonNodeUtils.findStringValue(jsonNode, "value");
-			if (AuthenticationMethod.HEADER.getValue().equalsIgnoreCase(value)) {
+			if (value != null && AuthenticationMethod.HEADER.getValue().equalsIgnoreCase(value)) {
 				return AuthenticationMethod.HEADER;
 			}
-			if (AuthenticationMethod.FORM.getValue().equalsIgnoreCase(value)) {
+			if (value != null && AuthenticationMethod.FORM.getValue().equalsIgnoreCase(value)) {
 				return AuthenticationMethod.FORM;
 			}
-			if (AuthenticationMethod.QUERY.getValue().equalsIgnoreCase(value)) {
+			if (value != null && AuthenticationMethod.QUERY.getValue().equalsIgnoreCase(value)) {
 				return AuthenticationMethod.QUERY;
 			}
 			return null;

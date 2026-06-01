@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.web.util.UrlUtils;
@@ -122,7 +123,7 @@ public final class RelyingPartyRegistrationPlaceholderResolvers {
 			this.uriVariables = uriVariables;
 		}
 
-		public String resolve(String uri) {
+		public @Nullable String resolve(@Nullable String uri) {
 			if (uri == null) {
 				return null;
 			}

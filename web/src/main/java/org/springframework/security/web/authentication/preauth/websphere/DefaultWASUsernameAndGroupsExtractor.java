@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ import javax.security.auth.Subject;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 
@@ -50,16 +51,16 @@ final class DefaultWASUsernameAndGroupsExtractor implements WASUsernameAndGroups
 
 	private static final String USER_REGISTRY = "UserRegistry";
 
-	private static Method getRunAsSubject = null;
+	private static @Nullable Method getRunAsSubject = null;
 
-	private static Method getGroupsForUser = null;
+	private static @Nullable Method getGroupsForUser = null;
 
-	private static Method getSecurityName = null;
+	private static @Nullable Method getSecurityName = null;
 
-	private static Method narrow = null;
+	private static @Nullable Method narrow = null;
 
 	// SEC-803
-	private static Class<?> wsCredentialClass = null;
+	private static @Nullable Class<?> wsCredentialClass = null;
 
 	@Override
 	public List<String> getGroupsForCurrentUser() {
@@ -67,7 +68,7 @@ final class DefaultWASUsernameAndGroupsExtractor implements WASUsernameAndGroups
 	}
 
 	@Override
-	public String getCurrentUserName() {
+	public @Nullable String getCurrentUserName() {
 		return getSecurityName(getRunAsSubject());
 	}
 
@@ -76,7 +77,7 @@ final class DefaultWASUsernameAndGroupsExtractor implements WASUsernameAndGroups
 	 * @param subject The subject for which to retrieve the security name
 	 * @return String the security name for the given subject
 	 */
-	private static String getSecurityName(final Subject subject) {
+	private static @Nullable String getSecurityName(final Subject subject) {
 		logger.debug(LogMessage.format("Determining Websphere security name for subject %s", subject));
 		String userSecurityName = null;
 		if (subject != null) {
@@ -116,7 +117,7 @@ final class DefaultWASUsernameAndGroupsExtractor implements WASUsernameAndGroups
 	 * @return the WebSphere group names for the given security name
 	 */
 	@SuppressWarnings("unchecked")
-	private static List<String> getWebSphereGroups(final String securityName) {
+	private static List<String> getWebSphereGroups(final @Nullable String securityName) {
 		Context context = null;
 		try {
 			// TODO: Cache UserRegistry object
@@ -132,26 +133,26 @@ final class DefaultWASUsernameAndGroupsExtractor implements WASUsernameAndGroups
 			return new ArrayList<>(groups);
 		}
 		catch (Exception ex) {
-			logger.error("Exception occured while looking up groups for user", ex);
-			throw new RuntimeException("Exception occured while looking up groups for user", ex);
+			logger.error("Exception occurred while looking up groups for user", ex);
+			throw new RuntimeException("Exception occurred while looking up groups for user", ex);
 		}
 		finally {
 			closeContext(context);
 		}
 	}
 
-	private static void closeContext(Context context) {
+	private static void closeContext(@Nullable Context context) {
 		try {
 			if (context != null) {
 				context.close();
 			}
 		}
 		catch (NamingException ex) {
-			logger.debug("Exception occured while closing context", ex);
+			logger.debug("Exception occurred while closing context", ex);
 		}
 	}
 
-	private static Object invokeMethod(Method method, Object instance, Object... args) {
+	private static Object invokeMethod(Method method, @Nullable Object instance, Object... args) {
 		try {
 			return method.invoke(instance, args);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -147,13 +147,14 @@ public final class JwtValidators {
 	 *
 	 * <p>
 	 * To comply with this spec, this builder needs you to specify at least the
-	 * {@link #audience}, {@link #issuer}, and {@link #clientId}.
+	 * {@link #audience} and {@link #issuer}.
 	 *
 	 * <p>
 	 * While building, the claims are keyed by claim name to allow for simplified lookup
 	 * and replacement in {@link #validators}.
 	 *
 	 * @author Josh Cummings
+	 * @author Giacomo Baso
 	 * @since 6.5
 	 */
 	public static final class AtJwtBuilder {
@@ -167,6 +168,7 @@ public final class JwtValidators {
 			this.validators.put(JwtClaimNames.SUB, require(JwtClaimNames.SUB));
 			this.validators.put(JwtClaimNames.IAT, require(JwtClaimNames.IAT).and(timestamps));
 			this.validators.put(JwtClaimNames.JTI, require(JwtClaimNames.JTI));
+			this.validators.put("client_id", require("client_id"));
 		}
 
 		/**

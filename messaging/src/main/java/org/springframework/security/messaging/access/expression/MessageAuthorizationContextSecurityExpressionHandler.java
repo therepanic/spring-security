@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.messaging.access.expression;
 
 import java.util.Map;
 import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.ExpressionParser;
@@ -53,13 +55,13 @@ public final class MessageAuthorizationContextSecurityExpressionHandler
 	}
 
 	@Override
-	public EvaluationContext createEvaluationContext(Authentication authentication,
+	public EvaluationContext createEvaluationContext(@Nullable Authentication authentication,
 			MessageAuthorizationContext<?> message) {
 		return createEvaluationContext(() -> authentication, message);
 	}
 
 	@Override
-	public EvaluationContext createEvaluationContext(Supplier<Authentication> authentication,
+	public EvaluationContext createEvaluationContext(Supplier<? extends @Nullable Authentication> authentication,
 			MessageAuthorizationContext<?> message) {
 		EvaluationContext context = this.delegate.createEvaluationContext(authentication, message.getMessage());
 		Map<String, String> variables = message.getVariables();

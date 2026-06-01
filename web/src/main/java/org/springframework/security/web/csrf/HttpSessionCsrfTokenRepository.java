@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.UUID;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -47,7 +48,7 @@ public final class HttpSessionCsrfTokenRepository implements CsrfTokenRepository
 	private String sessionAttributeName = DEFAULT_CSRF_TOKEN_ATTR_NAME;
 
 	@Override
-	public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
+	public void saveToken(@Nullable CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 		if (token == null) {
 			HttpSession session = request.getSession(false);
 			if (session != null) {
@@ -61,7 +62,7 @@ public final class HttpSessionCsrfTokenRepository implements CsrfTokenRepository
 	}
 
 	@Override
-	public CsrfToken loadToken(HttpServletRequest request) {
+	public @Nullable CsrfToken loadToken(HttpServletRequest request) {
 		HttpSession session = request.getSession(false);
 		if (session == null) {
 			return null;
@@ -99,7 +100,7 @@ public final class HttpSessionCsrfTokenRepository implements CsrfTokenRepository
 	 * @param sessionAttributeName the new attribute name to use
 	 */
 	public void setSessionAttributeName(String sessionAttributeName) {
-		Assert.hasLength(sessionAttributeName, "sessionAttributename cannot be null or empty");
+		Assert.hasLength(sessionAttributeName, "sessionAttributeName cannot be null or empty");
 		this.sessionAttributeName = sessionAttributeName;
 	}
 

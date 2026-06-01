@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,8 +37,12 @@ import org.springframework.security.web.server.csrf.DefaultCsrfToken;
  * @author Boris Finkelshteyn
  * @since 5.1
  * @see SecurityJackson2Modules
+ * @deprecated as of 7.0 in favor of
+ * {@link org.springframework.security.web.server.jackson.WebServerJacksonModule} based on
+ * Jackson 3
  */
-@SuppressWarnings("serial")
+@Deprecated(forRemoval = true)
+@SuppressWarnings({ "serial", "removal" })
 public class WebServerJackson2Module extends SimpleModule {
 
 	private static final String NAME = WebServerJackson2Module.class.getName();

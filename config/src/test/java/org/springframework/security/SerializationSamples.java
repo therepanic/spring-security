@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.security;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.security.Principal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
@@ -78,11 +80,15 @@ import org.springframework.security.authentication.jaas.event.JaasAuthentication
 import org.springframework.security.authentication.jaas.event.JaasAuthenticationSuccessEvent;
 import org.springframework.security.authentication.ott.DefaultOneTimeToken;
 import org.springframework.security.authentication.ott.InvalidOneTimeTokenException;
+import org.springframework.security.authentication.ott.OneTimeTokenAuthentication;
 import org.springframework.security.authentication.ott.OneTimeTokenAuthenticationToken;
 import org.springframework.security.authentication.password.CompromisedPasswordException;
 import org.springframework.security.authorization.AuthorityAuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authorization.FactorAuthorizationDecision;
+import org.springframework.security.authorization.RequiredFactor;
+import org.springframework.security.authorization.RequiredFactorError;
 import org.springframework.security.authorization.event.AuthorizationEvent;
 import org.springframework.security.authorization.event.AuthorizationGrantedEvent;
 import org.springframework.security.cas.authentication.CasAssertionAuthenticationToken;
@@ -92,6 +98,7 @@ import org.springframework.security.config.annotation.AlreadyBuiltException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.context.TransientSecurityContext;
@@ -121,6 +128,8 @@ import org.springframework.security.oauth2.client.oidc.session.OidcSessionInform
 import org.springframework.security.oauth2.client.oidc.session.TestOidcSessionInformations;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.TestClientRegistrations;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
@@ -155,9 +164,49 @@ import org.springframework.security.oauth2.jwt.JwtEncodingException;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.JwtValidationException;
 import org.springframework.security.oauth2.jwt.TestJwts;
+import org.springframework.security.oauth2.server.authorization.OAuth2Authorization;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationCode;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationConsent;
+import org.springframework.security.oauth2.server.authorization.OAuth2AuthorizationServerMetadata;
+import org.springframework.security.oauth2.server.authorization.OAuth2ClientRegistration;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenIntrospection;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.TestOAuth2Authorizations;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AccessTokenAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationException;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeRequestAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationConsentAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationGrantAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientCredentialsAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientRegistrationAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2DeviceAuthorizationConsentAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2DeviceAuthorizationRequestAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2DeviceCodeAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2DeviceVerificationAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2PushedAuthorizationRequestAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2RefreshTokenAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenExchangeActor;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenExchangeAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenExchangeCompositeAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenIntrospectionAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2TokenRevocationAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
+import org.springframework.security.oauth2.server.authorization.client.TestRegisteredClients;
+import org.springframework.security.oauth2.server.authorization.oidc.OidcClientRegistration;
+import org.springframework.security.oauth2.server.authorization.oidc.OidcProviderConfiguration;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcClientRegistrationAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcLogoutAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.oidc.authentication.OidcUserInfoAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.settings.AuthorizationServerSettings;
+import org.springframework.security.oauth2.server.authorization.settings.ClientSettings;
+import org.springframework.security.oauth2.server.authorization.settings.OAuth2TokenFormat;
+import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenClaimNames;
 import org.springframework.security.oauth2.server.resource.BearerTokenError;
 import org.springframework.security.oauth2.server.resource.BearerTokenErrors;
 import org.springframework.security.oauth2.server.resource.InvalidBearerTokenException;
+import org.springframework.security.oauth2.server.resource.OAuth2ProtectedResourceMetadata;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.DPoPAuthenticationToken;
@@ -178,15 +227,17 @@ import org.springframework.security.saml2.provider.service.authentication.Saml2P
 import org.springframework.security.saml2.provider.service.authentication.Saml2RedirectAuthenticationRequest;
 import org.springframework.security.saml2.provider.service.authentication.Saml2ResponseAssertion;
 import org.springframework.security.saml2.provider.service.authentication.Saml2ResponseAssertionAccessor;
+import org.springframework.security.saml2.provider.service.authentication.TestOpenSamlObjects;
 import org.springframework.security.saml2.provider.service.authentication.TestSaml2AuthenticationTokens;
 import org.springframework.security.saml2.provider.service.authentication.TestSaml2Authentications;
 import org.springframework.security.saml2.provider.service.authentication.TestSaml2LogoutRequests;
 import org.springframework.security.saml2.provider.service.authentication.TestSaml2PostAuthenticationRequests;
 import org.springframework.security.saml2.provider.service.authentication.TestSaml2RedirectAuthenticationRequests;
 import org.springframework.security.saml2.provider.service.authentication.logout.Saml2LogoutRequest;
+import org.springframework.security.saml2.provider.service.registration.OpenSamlAssertingPartyDetails;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.TestRelyingPartyRegistrations;
-import org.springframework.security.web.PortResolverImpl;
+import org.springframework.security.web.authentication.AuthenticationFilter;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationToken;
 import org.springframework.security.web.authentication.preauth.PreAuthenticatedCredentialsNotFoundException;
@@ -207,12 +258,16 @@ import org.springframework.security.web.savedrequest.SimpleSavedRequest;
 import org.springframework.security.web.server.firewall.ServerExchangeRejectedException;
 import org.springframework.security.web.session.HttpSessionCreatedEvent;
 import org.springframework.security.web.session.HttpSessionIdChangedEvent;
+import org.springframework.security.web.webauthn.api.AttestationConveyancePreference;
 import org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientInputs;
 import org.springframework.security.web.webauthn.api.AuthenticationExtensionsClientOutputs;
 import org.springframework.security.web.webauthn.api.AuthenticatorAssertionResponse;
 import org.springframework.security.web.webauthn.api.AuthenticatorAttachment;
+import org.springframework.security.web.webauthn.api.AuthenticatorAttestationResponse;
+import org.springframework.security.web.webauthn.api.AuthenticatorSelectionCriteria;
 import org.springframework.security.web.webauthn.api.AuthenticatorTransport;
 import org.springframework.security.web.webauthn.api.Bytes;
+import org.springframework.security.web.webauthn.api.COSEAlgorithmIdentifier;
 import org.springframework.security.web.webauthn.api.CredProtectAuthenticationExtensionsClientInput;
 import org.springframework.security.web.webauthn.api.CredentialPropertiesOutput;
 import org.springframework.security.web.webauthn.api.ImmutableAuthenticationExtensionsClientInput;
@@ -220,12 +275,18 @@ import org.springframework.security.web.webauthn.api.ImmutableAuthenticationExte
 import org.springframework.security.web.webauthn.api.ImmutableAuthenticationExtensionsClientOutputs;
 import org.springframework.security.web.webauthn.api.ImmutablePublicKeyCredentialUserEntity;
 import org.springframework.security.web.webauthn.api.PublicKeyCredential;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialCreationOptions;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialDescriptor;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialParameters;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialRequestOptions;
+import org.springframework.security.web.webauthn.api.PublicKeyCredentialRpEntity;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialType;
 import org.springframework.security.web.webauthn.api.PublicKeyCredentialUserEntity;
+import org.springframework.security.web.webauthn.api.ResidentKeyRequirement;
 import org.springframework.security.web.webauthn.api.TestAuthenticationAssertionResponses;
+import org.springframework.security.web.webauthn.api.TestAuthenticatorAttestationResponses;
 import org.springframework.security.web.webauthn.api.TestBytes;
+import org.springframework.security.web.webauthn.api.TestPublicKeyCredentialCreationOptions;
 import org.springframework.security.web.webauthn.api.TestPublicKeyCredentialRequestOptions;
 import org.springframework.security.web.webauthn.api.TestPublicKeyCredentialUserEntities;
 import org.springframework.security.web.webauthn.api.TestPublicKeyCredentials;
@@ -233,6 +294,7 @@ import org.springframework.security.web.webauthn.api.UserVerificationRequirement
 import org.springframework.security.web.webauthn.authentication.WebAuthnAuthentication;
 import org.springframework.security.web.webauthn.authentication.WebAuthnAuthenticationRequestToken;
 import org.springframework.security.web.webauthn.management.RelyingPartyAuthenticationRequest;
+import org.springframework.security.web.webauthn.management.TestPublicKeyCredentialRpEntities;
 import org.springframework.util.ReflectionUtils;
 
 final class SerializationSamples {
@@ -245,6 +307,14 @@ final class SerializationSamples {
 		UserDetails user = TestAuthentication.user();
 		Authentication authentication = TestAuthentication.authenticated(user);
 		SecurityContext securityContext = new SecurityContextImpl(authentication);
+
+		instancioByClassName.put(OneTimeTokenAuthenticationToken.class, () -> {
+			@SuppressWarnings("removal")
+			InstancioOfClassApi<?> instancio = Instancio.of(OneTimeTokenAuthenticationToken.class);
+			instancio.supply(Select.all(OneTimeTokenAuthenticationToken.class),
+					(r) -> applyDetails(new OneTimeTokenAuthenticationToken("token")));
+			return instancio;
+		});
 
 		// oauth2-core
 		generatorByClassName.put(DefaultOAuth2User.class, (r) -> TestOAuth2Users.create());
@@ -370,6 +440,221 @@ final class SerializationSamples {
 				(r) -> new OAuth2IntrospectionException("message", new RuntimeException()));
 		generatorByClassName.put(DPoPAuthenticationToken.class,
 				(r) -> applyDetails(new DPoPAuthenticationToken("token", "proof", "method", "uri")));
+		generatorByClassName.put(OAuth2ProtectedResourceMetadata.class,
+				(r) -> OAuth2ProtectedResourceMetadata.builder()
+					.resource("https://localhost/resource")
+					.authorizationServer("https://localhost/authorizationServer")
+					.scope("scope")
+					.bearerMethod("bearerMethod")
+					.resourceName("resourceName")
+					.tlsClientCertificateBoundAccessTokens(true)
+					.build());
+
+		// oauth2-authorization-server
+		RegisteredClient registeredClient = TestRegisteredClients.registeredClient().build();
+		OAuth2Authorization authorization = TestOAuth2Authorizations.authorization(registeredClient).build();
+		OAuth2AuthorizationRequest authorizationRequest = authorization
+			.getAttribute(OAuth2AuthorizationRequest.class.getName());
+		Authentication principal = authorization.getAttribute(Principal.class.getName());
+		generatorByClassName.put(RegisteredClient.class, (r) -> registeredClient);
+		generatorByClassName.put(OAuth2Authorization.class, (r) -> authorization);
+		generatorByClassName.put(OAuth2Authorization.Token.class, (r) -> authorization.getAccessToken());
+		generatorByClassName.put(OAuth2AuthorizationCode.class,
+				(r) -> new OAuth2AuthorizationCode("code", Instant.now(), Instant.now().plusSeconds(300)));
+		generatorByClassName.put(OAuth2AuthorizationConsent.class,
+				(r) -> OAuth2AuthorizationConsent.withId("registeredClientId", "principalName")
+					.scope("scope1")
+					.scope("scope2")
+					.build());
+		generatorByClassName.put(OAuth2AuthorizationCodeRequestAuthenticationToken.class, (r) -> {
+			OAuth2AuthorizationCodeRequestAuthenticationToken authenticationToken = new OAuth2AuthorizationCodeRequestAuthenticationToken(
+					"authorizationUri", "clientId", principal, "redirectUri", "state", authorizationRequest.getScopes(),
+					authorizationRequest.getAdditionalParameters());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2PushedAuthorizationRequestAuthenticationToken.class, (r) -> {
+			OAuth2PushedAuthorizationRequestAuthenticationToken authenticationToken = new OAuth2PushedAuthorizationRequestAuthenticationToken(
+					"authorizationUri", "clientId", principal, "redirectUri", "state", authorizationRequest.getScopes(),
+					authorizationRequest.getAdditionalParameters());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2AuthorizationGrantAuthenticationToken.class, (r) -> {
+			org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationToken authenticationToken = new org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationToken(
+					"code", principal, "redirectUri", new HashMap<>());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(
+				org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationToken.class,
+				(r) -> {
+					org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationToken token = new org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationCodeAuthenticationToken(
+							"code", principal, "https://localhost/callback", Map.of("custom_param", "custom_value"));
+					token.setDetails(details);
+					return token;
+				});
+		generatorByClassName.put(OAuth2AuthorizationCodeRequestAuthenticationException.class, (r) -> {
+			OAuth2AuthorizationCodeRequestAuthenticationToken authToken = new OAuth2AuthorizationCodeRequestAuthenticationToken(
+					"https://localhost/authorize", "clientId", principal, "https://localhost/callback", "state",
+					authorizationRequest.getScopes(), authorizationRequest.getAdditionalParameters());
+			return new OAuth2AuthorizationCodeRequestAuthenticationException(
+					new OAuth2Error("invalid_request", "Missing required parameter", "https://example.com/error"),
+					authToken);
+		});
+		generatorByClassName.put(OAuth2ClientCredentialsAuthenticationToken.class, (r) -> {
+			OAuth2ClientCredentialsAuthenticationToken token = new OAuth2ClientCredentialsAuthenticationToken(principal,
+					Set.of("scope1", "scope2"), Map.of("custom_param", "custom_value"));
+			token.setDetails(details);
+			return token;
+		});
+		generatorByClassName.put(OAuth2DeviceCodeAuthenticationToken.class, (r) -> {
+			OAuth2DeviceCodeAuthenticationToken token = new OAuth2DeviceCodeAuthenticationToken("device-code",
+					principal, Map.of("custom_param", "custom_value"));
+			token.setDetails(details);
+			return token;
+		});
+		generatorByClassName.put(OAuth2RefreshTokenAuthenticationToken.class, (r) -> {
+			OAuth2RefreshTokenAuthenticationToken token = new OAuth2RefreshTokenAuthenticationToken("refresh-token",
+					principal, Set.of("scope1", "scope2"), Map.of("custom_param", "custom_value"));
+			token.setDetails(details);
+			return token;
+		});
+		generatorByClassName.put(OAuth2TokenExchangeAuthenticationToken.class, (r) -> {
+			OAuth2TokenExchangeAuthenticationToken token = new OAuth2TokenExchangeAuthenticationToken(
+					"urn:ietf:params:oauth:token-type:access_token", "subject-token",
+					"urn:ietf:params:oauth:token-type:jwt", principal, "actor-token",
+					"urn:ietf:params:oauth:token-type:jwt", Set.of("https://resource.example.com"), Set.of("audience"),
+					Set.of("scope1"), Map.of("custom_param", "custom_value"));
+			token.setDetails(details);
+			return token;
+		});
+		OAuth2TokenExchangeActor actor = new OAuth2TokenExchangeActor(Map.of(OAuth2TokenClaimNames.ISS,
+				"https://issuer.example.com", OAuth2TokenClaimNames.SUB, "actor-subject"));
+		generatorByClassName.put(OAuth2TokenExchangeActor.class, (r) -> actor);
+		generatorByClassName.put(OAuth2TokenExchangeCompositeAuthenticationToken.class, (r) -> {
+			AbstractAuthenticationToken token = new OAuth2TokenExchangeCompositeAuthenticationToken(authentication,
+					List.of(actor));
+			token.setDetails(details);
+			return token;
+		});
+		generatorByClassName.put(OAuth2AuthorizationConsentAuthenticationToken.class, (r) -> {
+			OAuth2AuthorizationConsentAuthenticationToken authenticationToken = new OAuth2AuthorizationConsentAuthenticationToken(
+					"authorizationUri", "clientId", principal, "state", authorizationRequest.getScopes(),
+					authorizationRequest.getAdditionalParameters());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2DeviceAuthorizationRequestAuthenticationToken.class, (r) -> {
+			OAuth2DeviceAuthorizationRequestAuthenticationToken authenticationToken = new OAuth2DeviceAuthorizationRequestAuthenticationToken(
+					principal, "authorizationUri", authorizationRequest.getScopes(),
+					authorizationRequest.getAdditionalParameters());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2DeviceAuthorizationConsentAuthenticationToken.class, (r) -> {
+			OAuth2DeviceAuthorizationConsentAuthenticationToken authenticationToken = new OAuth2DeviceAuthorizationConsentAuthenticationToken(
+					"authorizationUri", "clientId", principal, "userCode", "state", authorizationRequest.getScopes(),
+					authorizationRequest.getAdditionalParameters());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2DeviceVerificationAuthenticationToken.class, (r) -> {
+			OAuth2DeviceVerificationAuthenticationToken authenticationToken = new OAuth2DeviceVerificationAuthenticationToken(
+					principal, "userCode", new HashMap<>());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2TokenIntrospectionAuthenticationToken.class, (r) -> {
+			OAuth2TokenIntrospectionAuthenticationToken authenticationToken = new OAuth2TokenIntrospectionAuthenticationToken(
+					"token", principal, "tokenTypeHint", new HashMap<>());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2TokenRevocationAuthenticationToken.class, (r) -> {
+			OAuth2TokenRevocationAuthenticationToken authenticationToken = new OAuth2TokenRevocationAuthenticationToken(
+					"token", principal, "tokenTypeHint");
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		OAuth2ClientRegistration oauth2ClientRegistration = OAuth2ClientRegistration.builder()
+			.grantType(AuthorizationGrantType.AUTHORIZATION_CODE.getValue())
+			.scope("scope1")
+			.redirectUri("https://localhost/oauth2/callback")
+			.build();
+		generatorByClassName.put(OAuth2ClientRegistration.class, (r) -> oauth2ClientRegistration);
+		generatorByClassName.put(OAuth2ClientRegistrationAuthenticationToken.class, (r) -> {
+			OAuth2ClientRegistrationAuthenticationToken authenticationToken = new OAuth2ClientRegistrationAuthenticationToken(
+					principal, oauth2ClientRegistration);
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		OidcClientRegistration oidcClientRegistration = OidcClientRegistration.builder()
+			.grantType(AuthorizationGrantType.AUTHORIZATION_CODE.getValue())
+			.scope("scope1")
+			.redirectUri("https://localhost/oauth2/callback")
+			.build();
+		generatorByClassName.put(OidcClientRegistration.class, (r) -> oidcClientRegistration);
+		generatorByClassName.put(OidcClientRegistrationAuthenticationToken.class, (r) -> {
+			OidcClientRegistrationAuthenticationToken authenticationToken = new OidcClientRegistrationAuthenticationToken(
+					principal, oidcClientRegistration);
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OidcUserInfoAuthenticationToken.class, (r) -> {
+			OidcUserInfo userInfo = OidcUserInfo.builder().subject("subject").name("name").build();
+			OidcUserInfoAuthenticationToken authenticationToken = new OidcUserInfoAuthenticationToken(principal,
+					userInfo);
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OidcLogoutAuthenticationToken.class, (r) -> {
+			OidcIdToken idToken = OidcIdToken.withTokenValue("tokenValue")
+				.issuedAt(Instant.now())
+				.expiresAt(Instant.now().plusSeconds(60))
+				.build();
+			OidcLogoutAuthenticationToken authenticationToken = new OidcLogoutAuthenticationToken(idToken, principal,
+					"sessionId", "clientId", "postLogoutRedirectUri", "state");
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2ClientAuthenticationToken.class, (r) -> {
+			OAuth2ClientAuthenticationToken authenticationToken = new OAuth2ClientAuthenticationToken(registeredClient,
+					ClientAuthenticationMethod.CLIENT_SECRET_BASIC, "credentials");
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2TokenIntrospection.class,
+				(r) -> OAuth2TokenIntrospection.builder().active(true).clientId("clientId").build());
+		generatorByClassName.put(OAuth2AccessTokenAuthenticationToken.class, (r) -> {
+			OAuth2AccessTokenAuthenticationToken authenticationToken = new OAuth2AccessTokenAuthenticationToken(
+					registeredClient, principal, authorization.getAccessToken().getToken());
+			authenticationToken.setDetails(details);
+			return authenticationToken;
+		});
+		generatorByClassName.put(OAuth2AuthorizationServerMetadata.class,
+				(r) -> OAuth2AuthorizationServerMetadata.builder()
+					.issuer("https://localhost")
+					.authorizationEndpoint("https://localhost/oauth2/authorize")
+					.tokenEndpoint("https://localhost/oauth2/token")
+					.responseType("code")
+					.build());
+		generatorByClassName.put(OidcProviderConfiguration.class,
+				(r) -> OidcProviderConfiguration.builder()
+					.issuer("https://localhost")
+					.authorizationEndpoint("https://localhost/oauth2/authorize")
+					.tokenEndpoint("https://localhost/oauth2/token")
+					.jwkSetUrl("https://localhost/oauth2/jwks")
+					.responseType("code")
+					.subjectType("subjectType")
+					.idTokenSigningAlgorithm("RS256")
+					.build());
+		generatorByClassName.put(OAuth2TokenType.class, (r) -> OAuth2TokenType.ACCESS_TOKEN);
+		generatorByClassName.put(OAuth2TokenFormat.class, (r) -> OAuth2TokenFormat.SELF_CONTAINED);
+		generatorByClassName.put(AuthorizationServerSettings.class,
+				(r) -> AuthorizationServerSettings.builder().build());
+		generatorByClassName.put(ClientSettings.class, (r) -> ClientSettings.builder().build());
+		generatorByClassName.put(TokenSettings.class, (r) -> TokenSettings.builder().build());
 
 		// config
 		generatorByClassName.put(AlreadyBuiltException.class, (r) -> new AlreadyBuiltException("message"));
@@ -386,6 +671,8 @@ final class SerializationSamples {
 			token.setDetails(details);
 			return token;
 		});
+		generatorByClassName.put(FactorGrantedAuthority.class,
+				(r) -> FactorGrantedAuthority.withAuthority("profile:read").issuedAt(Instant.now()).build());
 		generatorByClassName.put(UsernamePasswordAuthenticationToken.class, (r) -> {
 			var token = UsernamePasswordAuthenticationToken.unauthenticated(user, "creds");
 			token.setDetails(details);
@@ -396,8 +683,9 @@ final class SerializationSamples {
 			token.setDetails(details);
 			return token;
 		});
-		generatorByClassName.put(OneTimeTokenAuthenticationToken.class,
-				(r) -> applyDetails(new OneTimeTokenAuthenticationToken("username", "token")));
+
+		generatorByClassName.put(OneTimeTokenAuthentication.class,
+				(r) -> applyDetails(new OneTimeTokenAuthentication("username", authentication.getAuthorities())));
 		generatorByClassName.put(AccessDeniedException.class,
 				(r) -> new AccessDeniedException("access denied", new RuntimeException()));
 		generatorByClassName.put(AuthorizationServiceException.class,
@@ -451,7 +739,7 @@ final class SerializationSamples {
 		generatorByClassName.put(AuthenticationSuccessEvent.class,
 				(r) -> new AuthenticationSuccessEvent(authentication));
 		generatorByClassName.put(InteractiveAuthenticationSuccessEvent.class,
-				(r) -> new InteractiveAuthenticationSuccessEvent(authentication, Authentication.class));
+				(r) -> new InteractiveAuthenticationSuccessEvent(authentication, AuthenticationFilter.class));
 		generatorByClassName.put(LogoutSuccessEvent.class, (r) -> new LogoutSuccessEvent(authentication));
 		generatorByClassName.put(JaasAuthenticationFailedEvent.class,
 				(r) -> new JaasAuthenticationFailedEvent(authentication, new RuntimeException("message")));
@@ -465,6 +753,12 @@ final class SerializationSamples {
 		generatorByClassName.put(AuthorizationDecision.class, (r) -> new AuthorizationDecision(true));
 		generatorByClassName.put(AuthorityAuthorizationDecision.class,
 				(r) -> new AuthorityAuthorizationDecision(true, AuthorityUtils.createAuthorityList("ROLE_USER")));
+		RequiredFactor factor = RequiredFactor.withAuthority("authority").validDuration(Duration.ofSeconds(5)).build();
+		generatorByClassName.put(RequiredFactor.class, (r) -> factor);
+		RequiredFactorError error = RequiredFactorError.createMissing(factor);
+		generatorByClassName.put(RequiredFactorError.class, (r) -> error);
+		generatorByClassName.put(FactorAuthorizationDecision.class,
+				(r) -> new FactorAuthorizationDecision(List.of(error)));
 		generatorByClassName.put(CycleInRoleHierarchyException.class, (r) -> new CycleInRoleHierarchyException());
 		generatorByClassName.put(AuthorizationEvent.class,
 				(r) -> new AuthorizationEvent(new SerializableSupplier<>(authentication), "source",
@@ -541,6 +835,11 @@ final class SerializationSamples {
 			return token;
 		});
 		generatorByClassName.put(Saml2LogoutRequest.class, (r) -> TestSaml2LogoutRequests.create());
+		generatorByClassName.put(OpenSamlAssertingPartyDetails.class,
+				(r) -> OpenSamlAssertingPartyDetails
+					.withEntityDescriptor(
+							TestOpenSamlObjects.entityDescriptor(TestRelyingPartyRegistrations.full().build()))
+					.build());
 
 		// web
 		generatorByClassName.put(AnonymousAuthenticationToken.class, (r) -> {
@@ -594,7 +893,7 @@ final class SerializationSamples {
 			request.addParameter("parameter", "value");
 			request.setPathInfo("/path");
 			request.addPreferredLocale(Locale.ENGLISH);
-			return new SimpleSavedRequest(new DefaultSavedRequest(request, new PortResolverImpl(), "continue"));
+			return new SimpleSavedRequest(new DefaultSavedRequest(request, "continue"));
 		});
 
 		generatorByClassName.put(HttpSessionIdChangedEvent.class,
@@ -650,6 +949,8 @@ final class SerializationSamples {
 		generatorByClassName.put(CredentialPropertiesOutput.class, (o) -> credentialOutput);
 		generatorByClassName.put(ImmutableAuthenticationExtensionsClientOutputs.class, (o) -> outputs);
 		generatorByClassName.put(AuthenticatorAssertionResponse.class, (r) -> response);
+		generatorByClassName.put(AuthenticatorAttestationResponse.class,
+				(r) -> TestAuthenticatorAttestationResponses.createAuthenticatorAttestationResponse().build());
 		generatorByClassName.put(RelyingPartyAuthenticationRequest.class, (r) -> authRequest);
 		generatorByClassName.put(PublicKeyCredential.class, (r) -> credential);
 		generatorByClassName.put(WebAuthnAuthenticationRequestToken.class, (r) -> requestToken);
@@ -670,6 +971,36 @@ final class SerializationSamples {
 
 		generatorByClassName.put(CredentialPropertiesOutput.ExtensionOutput.class,
 				(r) -> new CredentialPropertiesOutput(true).getOutput());
+
+		AttestationConveyancePreference attestationConveyancePreference = AttestationConveyancePreference.DIRECT;
+		ResidentKeyRequirement residentKeyRequirement = ResidentKeyRequirement.REQUIRED;
+		AuthenticatorSelectionCriteria authenticatorSelectionCriteria = AuthenticatorSelectionCriteria.builder()
+			.authenticatorAttachment(AuthenticatorAttachment.PLATFORM)
+			.residentKey(residentKeyRequirement)
+			.userVerification(UserVerificationRequirement.REQUIRED)
+			.build();
+		PublicKeyCredentialParameters publicKeyCredentialParameters = PublicKeyCredentialParameters.RS256;
+		PublicKeyCredentialRpEntity publicKeyCredentialRpEntity = TestPublicKeyCredentialRpEntities.createRpEntity()
+			.build();
+
+		generatorByClassName.put(AttestationConveyancePreference.class, (r) -> attestationConveyancePreference);
+		generatorByClassName.put(ResidentKeyRequirement.class, (r) -> residentKeyRequirement);
+		generatorByClassName.put(AuthenticatorSelectionCriteria.class, (r) -> authenticatorSelectionCriteria);
+		generatorByClassName.put(COSEAlgorithmIdentifier.class, ((r) -> COSEAlgorithmIdentifier.RS256));
+		generatorByClassName.put(PublicKeyCredentialParameters.class, (r) -> publicKeyCredentialParameters);
+		generatorByClassName.put(PublicKeyCredentialRpEntity.class, (r) -> publicKeyCredentialRpEntity);
+		generatorByClassName.put(PublicKeyCredentialCreationOptions.class,
+				(o) -> TestPublicKeyCredentialCreationOptions.createPublicKeyCredentialCreationOptions()
+					.extensions(inputs)
+					.attestation(attestationConveyancePreference)
+					.authenticatorSelection(authenticatorSelectionCriteria)
+					.challenge(TestBytes.get())
+					.excludeCredentials(List.of(descriptor))
+					.rp(publicKeyCredentialRpEntity)
+					.pubKeyCredParams(publicKeyCredentialParameters)
+					.timeout(Duration.ofMinutes(5))
+					.user(TestPublicKeyCredentialUserEntities.userEntity().id(TestBytes.get()).build())
+					.build());
 
 		// One-Time Token
 		DefaultOneTimeToken oneTimeToken = new DefaultOneTimeToken(UUID.randomUUID().toString(), "user",

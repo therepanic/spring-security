@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,10 @@ package org.springframework.security.oauth2.client.authentication;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.SpringSecurityCoreVersion;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2RefreshToken;
@@ -46,17 +46,17 @@ import org.springframework.util.Assert;
  */
 public class OAuth2LoginAuthenticationToken extends AbstractAuthenticationToken {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
-	private OAuth2User principal;
+	private @Nullable OAuth2User principal;
 
 	private ClientRegistration clientRegistration;
 
 	private OAuth2AuthorizationExchange authorizationExchange;
 
-	private OAuth2AccessToken accessToken;
+	private @Nullable OAuth2AccessToken accessToken;
 
-	private OAuth2RefreshToken refreshToken;
+	private @Nullable OAuth2RefreshToken refreshToken;
 
 	/**
 	 * This constructor should be used when the Authorization Request/Response is
@@ -119,7 +119,7 @@ public class OAuth2LoginAuthenticationToken extends AbstractAuthenticationToken 
 	}
 
 	@Override
-	public OAuth2User getPrincipal() {
+	public @Nullable OAuth2User getPrincipal() {
 		return this.principal;
 	}
 
@@ -148,7 +148,7 @@ public class OAuth2LoginAuthenticationToken extends AbstractAuthenticationToken 
 	 * Returns the {@link OAuth2AccessToken access token}.
 	 * @return the {@link OAuth2AccessToken}
 	 */
-	public OAuth2AccessToken getAccessToken() {
+	public @Nullable OAuth2AccessToken getAccessToken() {
 		return this.accessToken;
 	}
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,6 +106,21 @@ public class CookieRequestCacheTests {
 		SavedRequest savedRequest = cookieRequestCache.getRequest(request, new MockHttpServletResponse());
 		assertThat(savedRequest).isNotNull();
 		assertThat(savedRequest.getRedirectUrl()).isEqualTo(redirectUrl);
+	}
+
+	@Test
+	public void getRequestWhenRequestContainsSavedRequestCookieThenSavedRequestContainsRequestParameters() {
+		CookieRequestCache cookieRequestCache = new CookieRequestCache();
+		MockHttpServletRequest request = new MockHttpServletRequest();
+		request.setCookies(new Cookie(DEFAULT_COOKIE_NAME, encodeCookie("https://abc.com/destination")));
+		request.setParameter("single", "first");
+		request.addParameter("multi", "second");
+		request.addParameter("multi", "third");
+		SavedRequest savedRequest = cookieRequestCache.getRequest(request, new MockHttpServletResponse());
+		assertThat(savedRequest).isNotNull();
+		assertThat(savedRequest.getParameterValues("single")).containsExactly("first");
+		assertThat(savedRequest.getParameterValues("multi")).containsExactly("second", "third");
+		assertThat(savedRequest.getParameterMap()).containsKeys("single", "multi");
 	}
 
 	@Test

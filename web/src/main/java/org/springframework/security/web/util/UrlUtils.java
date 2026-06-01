@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Provides static methods for composing URLs.
@@ -49,7 +50,7 @@ public final class UrlUtils {
 	 * @return the full URL, suitable for redirects (not decoded).
 	 */
 	public static String buildFullRequestUrl(String scheme, String serverName, int serverPort, String requestURI,
-			String queryString) {
+			@Nullable String queryString) {
 		scheme = scheme.toLowerCase(Locale.ENGLISH);
 		StringBuilder url = new StringBuilder();
 		url.append(scheme).append("://").append(serverName);
@@ -86,8 +87,8 @@ public final class UrlUtils {
 	 * (SEC-1255). This method is typically used to return a URL for matching against
 	 * secured paths, hence the decoded form is used in preference to the requestURI for
 	 * building the returned value. But this method may also be called using dummy request
-	 * objects which just have the requestURI and contextPatth set, for example, so it
-	 * will fall back to using those.
+	 * objects which just have the requestURI and contextPath set, for example, so it will
+	 * fall back to using those.
 	 * @return the decoded URL, excluding any server name, context path or servlet path
 	 *
 	 */

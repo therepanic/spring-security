@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.rsocket.metadata;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -44,7 +45,7 @@ public class BasicAuthenticationDecoder extends AbstractDecoder<UsernamePassword
 
 	@Override
 	public Flux<UsernamePasswordMetadata> decode(Publisher<DataBuffer> input, ResolvableType elementType,
-			MimeType mimeType, Map<String, Object> hints) {
+			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 		return Flux.from(input).map(DataBuffer::asByteBuffer).map((byteBuffer) -> {
 			byte[] sizeBytes = new byte[4];
 			byteBuffer.get(sizeBytes);
@@ -61,7 +62,7 @@ public class BasicAuthenticationDecoder extends AbstractDecoder<UsernamePassword
 
 	@Override
 	public Mono<UsernamePasswordMetadata> decodeToMono(Publisher<DataBuffer> input, ResolvableType elementType,
-			MimeType mimeType, Map<String, Object> hints) {
+			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 		return Mono.from(input).map(DataBuffer::asByteBuffer).map((byteBuffer) -> {
 			int usernameSize = byteBuffer.getInt();
 			byte[] usernameBytes = new byte[usernameSize];

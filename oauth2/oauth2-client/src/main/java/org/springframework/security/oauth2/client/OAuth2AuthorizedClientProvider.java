@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.security.oauth2.client;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 
@@ -46,7 +47,6 @@ public interface OAuth2AuthorizedClientProvider {
 	 * @return the {@link OAuth2AuthorizedClient} or {@code null} if authorization is not
 	 * supported for the specified client
 	 */
-	@Nullable
-	OAuth2AuthorizedClient authorize(OAuth2AuthorizationContext context);
+	@Nullable OAuth2AuthorizedClient authorize(OAuth2AuthorizationContext context);
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.oauth2.server.resource;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpStatus;
 
@@ -78,7 +80,7 @@ public final class BearerTokenErrors {
 	 * @param scope the scope attribute to use in the error
 	 * @return a {@link BearerTokenError}
 	 */
-	public static BearerTokenError insufficientScope(String message, String scope) {
+	public static BearerTokenError insufficientScope(String message, @Nullable String scope) {
 		try {
 			return new BearerTokenError(BearerTokenErrorCodes.INSUFFICIENT_SCOPE, HttpStatus.FORBIDDEN, message,
 					DEFAULT_URI, scope);

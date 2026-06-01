@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ package org.springframework.security.saml2.provider.service.authentication;
 import java.io.Serializable;
 import java.nio.charset.Charset;
 
-import org.springframework.security.core.SpringSecurityCoreVersion;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistration;
 import org.springframework.security.saml2.provider.service.registration.Saml2MessageBinding;
 import org.springframework.util.Assert;
@@ -39,17 +40,17 @@ import org.springframework.util.Assert;
  */
 public abstract class AbstractSaml2AuthenticationRequest implements Serializable {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
 	private final String samlRequest;
 
-	private final String relayState;
+	private final @Nullable String relayState;
 
 	private final String authenticationRequestUri;
 
-	private final String relyingPartyRegistrationId;
+	private final @Nullable String relyingPartyRegistrationId;
 
-	private final String id;
+	private final @Nullable String id;
 
 	/**
 	 * Mandatory constructor for the {@link AbstractSaml2AuthenticationRequest}
@@ -63,8 +64,8 @@ public abstract class AbstractSaml2AuthenticationRequest implements Serializable
 	 * @param id This is the unique id used in the {@link #samlRequest}, cannot be empty
 	 * or null
 	 */
-	AbstractSaml2AuthenticationRequest(String samlRequest, String relayState, String authenticationRequestUri,
-			String relyingPartyRegistrationId, String id) {
+	AbstractSaml2AuthenticationRequest(String samlRequest, @Nullable String relayState, String authenticationRequestUri,
+			@Nullable String relyingPartyRegistrationId, @Nullable String id) {
 		Assert.hasText(samlRequest, "samlRequest cannot be null or empty");
 		Assert.hasText(authenticationRequestUri, "authenticationRequestUri cannot be null or empty");
 		this.authenticationRequestUri = authenticationRequestUri;
@@ -89,7 +90,7 @@ public abstract class AbstractSaml2AuthenticationRequest implements Serializable
 	 * Returns the RelayState value, if present in the parameters
 	 * @return the RelayState value, or null if not available
 	 */
-	public String getRelayState() {
+	public @Nullable String getRelayState() {
 		return this.relayState;
 	}
 
@@ -107,7 +108,7 @@ public abstract class AbstractSaml2AuthenticationRequest implements Serializable
 	 * @return the {@link RelyingPartyRegistration} id
 	 * @since 5.8
 	 */
-	public String getRelyingPartyRegistrationId() {
+	public @Nullable String getRelyingPartyRegistrationId() {
 		return this.relyingPartyRegistrationId;
 	}
 
@@ -116,7 +117,7 @@ public abstract class AbstractSaml2AuthenticationRequest implements Serializable
 	 * @return the Authentication Request identifier
 	 * @since 5.8
 	 */
-	public String getId() {
+	public @Nullable String getId() {
 		return this.id;
 	}
 
@@ -133,15 +134,15 @@ public abstract class AbstractSaml2AuthenticationRequest implements Serializable
 	 */
 	public static class Builder<T extends Builder<T>> {
 
-		String authenticationRequestUri;
+		@Nullable String authenticationRequestUri;
 
-		String samlRequest;
+		@Nullable String samlRequest;
 
-		String relayState;
+		@Nullable String relayState;
 
-		String relyingPartyRegistrationId;
+		@Nullable String relyingPartyRegistrationId;
 
-		String id;
+		@Nullable String id;
 
 		/**
 		 * @deprecated Use {@link #Builder(RelyingPartyRegistration)} instead
@@ -174,7 +175,7 @@ public abstract class AbstractSaml2AuthenticationRequest implements Serializable
 		 * parameter will be removed from the map.
 		 * @return this object
 		 */
-		public T relayState(String relayState) {
+		public T relayState(@Nullable String relayState) {
 			this.relayState = relayState;
 			return _this();
 		}

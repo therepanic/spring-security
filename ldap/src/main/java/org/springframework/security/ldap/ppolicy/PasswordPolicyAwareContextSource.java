@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class PasswordPolicyAwareContextSource extends DefaultSpringSecurityConte
 				this.logger.debug(LogMessage.format("Failed to bind with %s", ctrl), ex);
 			}
 			LdapUtils.closeContext(ctx);
-			if (ctrl != null && ctrl.isLocked()) {
+			if (ctrl != null && ctrl.isLocked() && ctrl.getErrorStatus() != null) {
 				throw new PasswordPolicyException(ctrl.getErrorStatus());
 			}
 			throw LdapUtils.convertLdapException(ex);

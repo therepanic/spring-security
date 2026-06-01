@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.aop.Pointcut;
 import org.springframework.aop.support.AopUtils;
@@ -37,7 +38,8 @@ class PointcutDelegatingAuthorizationManager implements AuthorizationManager<Met
 	}
 
 	@Override
-	public AuthorizationResult authorize(Supplier<Authentication> authentication, MethodInvocation object) {
+	public AuthorizationResult authorize(Supplier<? extends @Nullable Authentication> authentication,
+			MethodInvocation object) {
 		for (Map.Entry<Pointcut, AuthorizationManager<MethodInvocation>> entry : this.managers.entrySet()) {
 			Class<?> targetClass = (object.getThis() != null) ? AopUtils.getTargetClass(object.getThis()) : null;
 			if (entry.getKey().getClassFilter().matches(targetClass)

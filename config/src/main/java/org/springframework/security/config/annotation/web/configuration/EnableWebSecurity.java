@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,7 @@ import org.springframework.security.web.SecurityFilterChain;
 @Target(ElementType.TYPE)
 @Documented
 @Import({ WebSecurityConfiguration.class, SpringWebMvcImportSelector.class, OAuth2ImportSelector.class,
-		HttpSecurityConfiguration.class, ObservationImportSelector.class, AuthorizationConfiguration.class })
+		HttpSecurityConfiguration.class, ObservationImportSelector.class })
 @EnableGlobalAuthentication
 public @interface EnableWebSecurity {
 

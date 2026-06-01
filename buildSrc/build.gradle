@@ -3,6 +3,7 @@ plugins {
 	id "groovy-gradle-plugin"
 	id "java"
 	id "groovy"
+	id "org.jetbrains.dokka" version "2.2.0"
 }
 
 java {
@@ -12,7 +13,7 @@ java {
 repositories {
 	gradlePluginPortal()
 	mavenCentral()
-	maven { url 'https://repo.spring.io/milestone' }
+	maven { url = 'https://repo.spring.io/snapshot' }
 }
 
 sourceSets {
@@ -64,6 +65,7 @@ configurations {
 dependencies {
 	implementation platform(libs.io.projectreactor.reactor.bom)
 
+	implementation libs.spring.nullability
 	implementation libs.com.google.code.gson.gson
 	implementation libs.com.thaiopensource.trag
 	implementation libs.net.sourceforge.saxon.saxon
@@ -78,6 +80,7 @@ dependencies {
 	implementation libs.io.spring.javaformat.spring.javaformat.gradle.plugin
 	implementation libs.io.spring.nohttp.nohttp.gradle
 	implementation libs.org.jetbrains.kotlin.kotlin.gradle.plugin
+	implementation libs.org.jetbrains.dokka.dokka.gradle.plugin
 	implementation (libs.net.sourceforge.htmlunit) {
 		exclude group: 'org.eclipse.jetty.websocket', module: 'websocket-client'
 	}

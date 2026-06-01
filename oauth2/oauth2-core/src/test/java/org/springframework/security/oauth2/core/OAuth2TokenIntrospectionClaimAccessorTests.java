@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 /**
  * Tests for {@link OAuth2TokenIntrospectionClaimAccessor}.
@@ -52,9 +51,9 @@ public class OAuth2TokenIntrospectionClaimAccessorTests {
 	}
 
 	@Test
-	public void isActiveWhenActiveClaimValueIsNullThenThrowsNullPointerException() {
+	public void isActiveWhenActiveClaimValueIsNullThenReturnFalse() {
 		this.claims.put(OAuth2TokenIntrospectionClaimNames.ACTIVE, null);
-		assertThatNullPointerException().isThrownBy(this.claimAccessor::isActive);
+		assertThat(this.claimAccessor.isActive()).isFalse();
 	}
 
 	@Test

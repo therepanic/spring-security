@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -29,6 +27,8 @@ import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -40,7 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
-import static org.assertj.core.api.Assertions.assertThatNullPointerException;
 
 /**
  * @author Rob Winch
@@ -111,7 +110,7 @@ public class ClientRegistrationsTests {
 
 	private MockWebServer server;
 
-	private ObjectMapper mapper = new ObjectMapper();
+	private JsonMapper mapper = new JsonMapper();
 
 	private Map<String, Object> response;
 
@@ -167,7 +166,7 @@ public class ClientRegistrationsTests {
 		assertThat(registration.getAuthorizationGrantType()).isEqualTo(AuthorizationGrantType.AUTHORIZATION_CODE);
 		assertThat(registration.getRegistrationId()).isEqualTo(URI.create(this.issuer).getHost());
 		assertThat(registration.getClientName()).isEqualTo(this.issuer);
-		assertThat(registration.getScopes()).isNull();
+		assertThat(registration.getScopes()).isEmpty();
 		assertThat(provider.getAuthorizationUri()).isEqualTo("https://example.com/o/oauth2/v2/auth");
 		assertThat(provider.getTokenUri()).isEqualTo("https://example.com/oauth2/v4/token");
 		assertThat(provider.getJwkSetUri()).isEqualTo("https://example.com/oauth2/v3/certs");
@@ -475,7 +474,7 @@ public class ClientRegistrationsTests {
 	@Test
 	public void issuerWhenOidcConfigurationResponseMissingJwksUriThenThrowsIllegalArgumentException() throws Exception {
 		this.response.remove("jwks_uri");
-		assertThatNullPointerException().isThrownBy(() -> registration(this.response).build());
+		assertThatIllegalArgumentException().isThrownBy(() -> registration(this.response).build());
 	}
 
 	@Test

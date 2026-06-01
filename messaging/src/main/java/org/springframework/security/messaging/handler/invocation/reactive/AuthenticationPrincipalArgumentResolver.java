@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.messaging.handler.invocation.reactive;
 
 import java.lang.annotation.Annotation;
 
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 
@@ -108,7 +109,7 @@ public class AuthenticationPrincipalArgumentResolver implements HandlerMethodArg
 
 	private boolean useAnnotationTemplate = false;
 
-	private BeanResolver beanResolver;
+	private @Nullable BeanResolver beanResolver;
 
 	private ReactiveAdapterRegistry adapterRegistry = ReactiveAdapterRegistry.getSharedInstance();
 
@@ -136,11 +137,12 @@ public class AuthenticationPrincipalArgumentResolver implements HandlerMethodArg
 	}
 
 	@Override
+	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290
 	public Mono<Object> resolveArgument(MethodParameter parameter, Message<?> message) {
 		ReactiveAdapter adapter = this.adapterRegistry.getAdapter(parameter.getParameterType());
 		// @formatter:off
 		return ReactiveSecurityContextHolder.getContext()
-				.map(SecurityContext::getAuthentication)
+				.mapNotNull(SecurityContext::getAuthentication)
 				.flatMap((a) -> {
 					Object p = resolvePrincipal(parameter, a.getPrincipal());
 					Mono<Object> principal = Mono.justOrEmpty(p);
@@ -149,8 +151,11 @@ public class AuthenticationPrincipalArgumentResolver implements HandlerMethodArg
 		// @formatter:on
 	}
 
-	private Object resolvePrincipal(MethodParameter parameter, Object principal) {
+	private @Nullable Object resolvePrincipal(MethodParameter parameter, @Nullable Object principal) {
 		AuthenticationPrincipal authPrincipal = findMethodAnnotation(parameter);
+		if (authPrincipal == null) {
+			return null;
+		}
 		String expressionToParse = authPrincipal.expression();
 		if (StringUtils.hasLength(expressionToParse)) {
 			StandardEvaluationContext context = new StandardEvaluationContext();
@@ -169,7 +174,7 @@ public class AuthenticationPrincipalArgumentResolver implements HandlerMethodArg
 		return principal;
 	}
 
-	private boolean isInvalidType(MethodParameter parameter, Object principal) {
+	private boolean isInvalidType(MethodParameter parameter, @Nullable Object principal) {
 		if (principal == null) {
 			return false;
 		}
@@ -206,7 +211,7 @@ public class AuthenticationPrincipalArgumentResolver implements HandlerMethodArg
 	 * @param parameter the {@link MethodParameter} to search for an {@link Annotation}
 	 * @return the {@link Annotation} that was found or null.
 	 */
-	private AuthenticationPrincipal findMethodAnnotation(MethodParameter parameter) {
+	private @Nullable AuthenticationPrincipal findMethodAnnotation(MethodParameter parameter) {
 		if (this.useAnnotationTemplate) {
 			return this.scanner.scan(parameter.getParameter());
 		}

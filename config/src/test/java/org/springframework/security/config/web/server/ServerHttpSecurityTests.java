@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import org.springframework.security.web.server.authentication.AnonymousAuthentic
 import org.springframework.security.web.server.authentication.DelegatingServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.HttpBasicServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authentication.HttpStatusServerEntryPoint;
+import org.springframework.security.web.server.authentication.ServerAuthenticationConverter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.security.web.server.authentication.ServerX509AuthenticationConverter;
@@ -498,6 +499,17 @@ public class ServerHttpSecurityTests {
 	}
 
 	@Test
+	public void x509WithConverterAndNoExtractorThenAddsX509Filter() {
+		ServerAuthenticationConverter mockConverter = mock(ServerAuthenticationConverter.class);
+		this.http.x509((x509) -> x509.serverAuthenticationConverter(mockConverter));
+		SecurityWebFilterChain securityWebFilterChain = this.http.build();
+		WebFilter x509WebFilter = securityWebFilterChain.getWebFilters()
+			.filter((filter) -> matchesX509Converter(filter, mockConverter))
+			.blockFirst();
+		assertThat(x509WebFilter).isNotNull();
+	}
+
+	@Test
 	public void addsX509FilterWhenX509AuthenticationIsConfiguredWithDefaults() {
 		this.http.x509(withDefaults());
 		SecurityWebFilterChain securityWebFilterChain = this.http.build();
@@ -725,6 +737,7 @@ public class ServerHttpSecurityTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	void resourcesWhenLoginPageConfiguredThenServesCss() {
 		this.http.formLogin(withDefaults());
 		this.http.authenticationManager(this.authenticationManager);
@@ -762,6 +775,17 @@ public class ServerHttpSecurityTests {
 		try {
 			Object converter = ReflectionTestUtils.getField(filter, "authenticationConverter");
 			return converter.getClass().isAssignableFrom(ServerX509AuthenticationConverter.class);
+		}
+		catch (IllegalArgumentException ex) {
+			// field doesn't exist
+			return false;
+		}
+	}
+
+	private boolean matchesX509Converter(WebFilter filter, ServerAuthenticationConverter expectedConverter) {
+		try {
+			Object converter = ReflectionTestUtils.getField(filter, "authenticationConverter");
+			return converter.equals(expectedConverter);
 		}
 		catch (IllegalArgumentException ex) {
 			// field doesn't exist

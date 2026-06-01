@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public final class JwtReactiveAuthenticationManager implements ReactiveAuthentic
 
 	private AuthenticationException onError(JwtException ex) {
 		if (ex instanceof BadJwtException) {
-			return new InvalidBearerTokenException(ex.getMessage(), ex);
+			return new InvalidBearerTokenException((ex.getMessage() != null) ? ex.getMessage() : "Invalid token", ex);
 		}
 		return new AuthenticationServiceException(ex.getMessage(), ex);
 	}

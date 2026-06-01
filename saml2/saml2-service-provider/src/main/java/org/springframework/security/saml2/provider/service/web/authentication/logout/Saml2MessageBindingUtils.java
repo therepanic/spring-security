@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,11 +50,11 @@ final class Saml2MessageBindingUtils {
 	}
 
 	static boolean isHttpRedirectBinding(HttpServletRequest request) {
-		return request != null && "GET".equalsIgnoreCase(request.getMethod()) && isSamlRequestResponse(request);
+		return "GET".equalsIgnoreCase(request.getMethod()) && isSamlRequestResponse(request);
 	}
 
 	static boolean isHttpPostBinding(HttpServletRequest request) {
-		return request != null && "POST".equalsIgnoreCase(request.getMethod()) && isSamlRequestResponse(request);
+		return "POST".equalsIgnoreCase(request.getMethod()) && isSamlRequestResponse(request);
 	}
 
 }

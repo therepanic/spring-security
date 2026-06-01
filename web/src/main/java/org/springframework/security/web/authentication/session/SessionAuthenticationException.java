@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,14 +22,13 @@ import org.springframework.security.core.AuthenticationException;
 
 /**
  * Thrown by an {@link SessionAuthenticationStrategy} or
- * {@link ServerSessionAuthenticationStrategy} to indicate that an authentication object
- * is not valid for the current session, typically because the same user has exceeded the
- * number of sessions they are allowed to have concurrently.
+ * {@link SessionAuthenticationStrategy} to indicate that an authentication object is not
+ * valid for the current session, typically because the same user has exceeded the number
+ * of sessions they are allowed to have concurrently.
  *
  * @author Luke Taylor
  * @since 3.0
  * @see SessionAuthenticationStrategy
- * @see ServerSessionAuthenticationStrategy
  */
 public class SessionAuthenticationException extends AuthenticationException {
 

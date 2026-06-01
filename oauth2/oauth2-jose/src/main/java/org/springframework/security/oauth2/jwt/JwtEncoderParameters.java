@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.security.oauth2.jwt;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -30,11 +31,11 @@ import org.springframework.util.Assert;
  */
 public final class JwtEncoderParameters {
 
-	private final JwsHeader jwsHeader;
+	private final @Nullable JwsHeader jwsHeader;
 
 	private final JwtClaimsSet claims;
 
-	private JwtEncoderParameters(JwsHeader jwsHeader, JwtClaimsSet claims) {
+	private JwtEncoderParameters(@Nullable JwsHeader jwsHeader, JwtClaimsSet claims) {
 		this.jwsHeader = jwsHeader;
 		this.claims = claims;
 	}
@@ -67,8 +68,7 @@ public final class JwtEncoderParameters {
 	 * Returns the {@link JwsHeader JWS headers}.
 	 * @return the {@link JwsHeader}, or {@code null} if not specified
 	 */
-	@Nullable
-	public JwsHeader getJwsHeader() {
+	public @Nullable JwsHeader getJwsHeader() {
 		return this.jwsHeader;
 	}
 

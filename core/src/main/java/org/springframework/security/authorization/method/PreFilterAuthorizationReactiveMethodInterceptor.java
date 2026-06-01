@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import org.aopalliance.aop.Advice;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
+import org.jspecify.annotations.Nullable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -98,9 +99,9 @@ public final class PreFilterAuthorizationReactiveMethodInterceptor implements Au
 	 * @return the {@link Publisher} to use
 	 */
 	@Override
-	public Object invoke(MethodInvocation mi) throws Throwable {
+	public @Nullable Object invoke(MethodInvocation mi) throws Throwable {
 		PreFilterExpressionAttributeRegistry.PreFilterExpressionAttribute attribute = this.registry.getAttribute(mi);
-		if (attribute == PreFilterExpressionAttributeRegistry.PreFilterExpressionAttribute.NULL_ATTRIBUTE) {
+		if (attribute == null) {
 			return ReactiveMethodInvocationUtils.proceed(mi);
 		}
 		FilterTarget filterTarget = findFilterTarget(attribute.getFilterTarget(), mi);
@@ -135,9 +136,9 @@ public final class PreFilterAuthorizationReactiveMethodInterceptor implements Au
 			Object target = mi.getThis();
 			Class<?> targetClass = (target != null) ? AopUtils.getTargetClass(target) : null;
 			Method specificMethod = AopUtils.getMostSpecificMethod(mi.getMethod(), targetClass);
-			String[] parameterNames = this.parameterNameDiscoverer.getParameterNames(specificMethod);
+			@Nullable String @Nullable [] parameterNames = this.parameterNameDiscoverer.getParameterNames(specificMethod);
 			if (parameterNames != null && parameterNames.length > 0) {
-				Object[] arguments = mi.getArguments();
+				@Nullable Object[] arguments = mi.getArguments();
 				for (index = 0; index < parameterNames.length; index++) {
 					if (name.equals(parameterNames[index])) {
 						value = arguments[index];
@@ -149,7 +150,7 @@ public final class PreFilterAuthorizationReactiveMethodInterceptor implements Au
 			}
 		}
 		else {
-			Object[] arguments = mi.getArguments();
+			@Nullable Object[] arguments = mi.getArguments();
 			Assert.state(arguments.length == 1,
 					"Unable to determine the method argument for filtering. Specify the filter target.");
 			value = arguments[0];
@@ -160,7 +161,7 @@ public final class PreFilterAuthorizationReactiveMethodInterceptor implements Au
 		return new FilterTarget((Publisher<?>) value, index);
 	}
 
-	private boolean isMultiValue(Class<?> returnType, ReactiveAdapter adapter) {
+	private boolean isMultiValue(Class<?> returnType, @Nullable ReactiveAdapter adapter) {
 		if (Flux.class.isAssignableFrom(returnType)) {
 			return true;
 		}
@@ -171,7 +172,9 @@ public final class PreFilterAuthorizationReactiveMethodInterceptor implements Au
 		MethodSecurityExpressionOperations rootObject = (MethodSecurityExpressionOperations) ctx.getRootObject()
 			.getValue();
 		return Mono.from(filterTarget).filterWhen((filterObject) -> {
-			rootObject.setFilterObject(filterObject);
+			if (rootObject != null) {
+				rootObject.setFilterObject(filterObject);
+			}
 			return ReactiveExpressionUtils.evaluateAsBoolean(filterExpression, ctx);
 		});
 	}
@@ -180,7 +183,9 @@ public final class PreFilterAuthorizationReactiveMethodInterceptor implements Au
 		MethodSecurityExpressionOperations rootObject = (MethodSecurityExpressionOperations) ctx.getRootObject()
 			.getValue();
 		return Flux.from(filterTarget).filterWhen((filterObject) -> {
-			rootObject.setFilterObject(filterObject);
+			if (rootObject != null) {
+				rootObject.setFilterObject(filterObject);
+			}
 			return ReactiveExpressionUtils.evaluateAsBoolean(filterExpression, ctx);
 		});
 	}

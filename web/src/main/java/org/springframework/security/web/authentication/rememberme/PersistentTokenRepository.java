@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.security.web.authentication.rememberme;
 
 import java.util.Date;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * The abstraction used by {@link PersistentTokenBasedRememberMeServices} to store the
  * persistent login tokens for a user.
@@ -33,7 +35,7 @@ public interface PersistentTokenRepository {
 
 	void updateToken(String series, String tokenValue, Date lastUsed);
 
-	PersistentRememberMeToken getTokenForSeries(String seriesId);
+	@Nullable PersistentRememberMeToken getTokenForSeries(String seriesId);
 
 	void removeUserTokens(String username);
 

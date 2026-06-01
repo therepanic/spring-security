@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.core.log.LogMessage;
@@ -131,8 +132,9 @@ public class CookieServerRequestCache implements ServerRequestCache {
 	}
 
 	private static ResponseCookie.ResponseCookieBuilder createResponseCookieBuilder(ServerHttpRequest request,
-			String cookieValue, Duration age) {
-		return ResponseCookie.from(REDIRECT_URI_COOKIE_NAME, cookieValue)
+			@Nullable String cookieValue, Duration age) {
+		return ResponseCookie.from(REDIRECT_URI_COOKIE_NAME)
+			.value(cookieValue)
 			.path(request.getPath().contextPath().value() + "/")
 			.maxAge(age)
 			.httpOnly(true)

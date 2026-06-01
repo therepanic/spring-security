@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.security.ldap.userdetails;
 import java.util.Collection;
 import java.util.Set;
 
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.NullUnmarked;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ldap.core.DirContextAdapter;
@@ -71,10 +73,12 @@ public class LdapUserDetailsServiceTests {
 		assertThat(user.getAuthorities()).isEmpty();
 	}
 
+	@NullUnmarked
 	class MockAuthoritiesPopulator implements LdapAuthoritiesPopulator {
 
 		@Override
-		public Collection<GrantedAuthority> getGrantedAuthorities(DirContextOperations userCtx, String username) {
+		public Collection<GrantedAuthority> getGrantedAuthorities(@NonNull DirContextOperations userCtx,
+				String username) {
 			return AuthorityUtils.createAuthorityList("ROLE_FROM_POPULATOR");
 		}
 

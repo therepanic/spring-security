@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
+import org.springframework.security.config.web.PathPatternRequestMatcherBuilderFactoryBean;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.test.web.servlet.RequestCacheResultMatcher;
@@ -90,7 +91,7 @@ public class RequestCacheConfigurerTests {
 		this.spring.register(RequestCacheDefaultsConfig.class, DefaultSecurityConfig.class).autowire();
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(get("/favicon.ico"))
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -104,7 +105,7 @@ public class RequestCacheConfigurerTests {
 		this.spring.register(RequestCacheDefaultsConfig.class, DefaultSecurityConfig.class).autowire();
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(get("/favicon.png"))
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -120,7 +121,7 @@ public class RequestCacheConfigurerTests {
 		MockHttpServletRequestBuilder request = get("/messages").header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON);
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -140,7 +141,7 @@ public class RequestCacheConfigurerTests {
 				.header("X-Requested-With", "XMLHttpRequest");
 		MockHttpSession session = (MockHttpSession) this.mvc
 				.perform(xRequestedWith)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -157,7 +158,7 @@ public class RequestCacheConfigurerTests {
 				MediaType.TEXT_EVENT_STREAM);
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -174,7 +175,7 @@ public class RequestCacheConfigurerTests {
 		MockHttpServletRequestBuilder request = get("/messages").header("Upgrade", "websocket");
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -185,13 +186,28 @@ public class RequestCacheConfigurerTests {
 		this.mvc.perform(formLogin(session)).andExpect(redirectedUrl("/"));
 	}
 
+	// gh-19128
+	@Test
+	public void getWhenBuilderBeanWithBasePathThenSavedRequestMatcherIgnoresBasePath() throws Exception {
+		this.spring.register(RequestCacheBuilderBeanConfig.class, DefaultSecurityConfig.class).autowire();
+		MockHttpServletRequestBuilder request = get("/messages").header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML);
+		// @formatter:off
+		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
+				.andExpect(redirectedUrl("/login"))
+				.andReturn()
+				.getRequest()
+				.getSession();
+		// @formatter:on
+		this.mvc.perform(formLogin(session)).andExpect(RequestCacheResultMatcher.redirectToCachedRequest());
+	}
+
 	@Test
 	public void getWhenBookmarkedRequestIsAllMediaTypeThenPostAuthenticationRemembers() throws Exception {
 		this.spring.register(RequestCacheDefaultsConfig.class, DefaultSecurityConfig.class).autowire();
 		MockHttpServletRequestBuilder request = get("/messages").header(HttpHeaders.ACCEPT, MediaType.ALL);
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -205,7 +221,7 @@ public class RequestCacheConfigurerTests {
 		MockHttpServletRequestBuilder request = get("/messages").header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML);
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -220,7 +236,7 @@ public class RequestCacheConfigurerTests {
 		MockHttpServletRequestBuilder request = get("/messages")
 				.header(HttpHeaders.ACCEPT, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -235,7 +251,7 @@ public class RequestCacheConfigurerTests {
 		MockHttpServletRequestBuilder request = get("/messages")
 				.header("X-Requested-With", "com.android");
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(request)
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -315,7 +331,7 @@ public class RequestCacheConfigurerTests {
 			.autowire();
 		// @formatter:off
 		MockHttpSession session = (MockHttpSession) this.mvc.perform(get("/favicon.ico"))
-				.andExpect(redirectedUrl("http://localhost/login"))
+				.andExpect(redirectedUrl("/login"))
 				.andReturn()
 				.getRequest()
 				.getSession();
@@ -397,6 +413,31 @@ public class RequestCacheConfigurerTests {
 				.formLogin(withDefaults());
 			return http.build();
 			// @formatter:on
+		}
+
+	}
+
+	// gh-19128
+	@Configuration
+	@EnableWebSecurity
+	static class RequestCacheBuilderBeanConfig {
+
+		@Bean
+		PathPatternRequestMatcherBuilderFactoryBean requestMatcherBuilder() {
+			PathPatternRequestMatcherBuilderFactoryBean bean = new PathPatternRequestMatcherBuilderFactoryBean();
+			bean.setBasePath("/spring");
+			return bean;
+		}
+
+		@Bean
+		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.authorizeHttpRequests((requests) -> requests
+					.anyRequest().authenticated())
+				.formLogin(withDefaults());
+			// @formatter:on
+			return http.build();
 		}
 
 	}

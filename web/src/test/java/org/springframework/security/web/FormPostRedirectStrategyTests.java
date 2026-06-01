@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,6 +98,19 @@ public class FormPostRedirectStrategyTests {
 			.contains("<input name=\"param1\" type=\"hidden\" value=\"one\" />");
 		assertThat(this.response.getContentAsString())
 			.contains("<input name=\"param2\" type=\"hidden\" value=\"two\" />");
+		assertThat(this.response).satisfies(hasScriptSrcNonce());
+	}
+
+	// gh-19136
+
+	@Test
+	public void absoluteUrlWithPercentEncodedQueryParamsRedirect() throws IOException {
+		this.redirectStrategy.sendRedirect(this.request, this.response, "https://example.com/cb?payload=a%2Bb%2Fc%3D");
+		assertThat(this.response.getStatus()).isEqualTo(HttpStatus.OK.value());
+		assertThat(this.response.getContentType()).isEqualTo(MediaType.TEXT_HTML_VALUE);
+		assertThat(this.response.getContentAsString()).contains("action=\"https://example.com/cb\"");
+		assertThat(this.response.getContentAsString())
+			.contains("<input name=\"payload\" type=\"hidden\" value=\"a+b/c=\" />");
 		assertThat(this.response).satisfies(hasScriptSrcNonce());
 	}
 

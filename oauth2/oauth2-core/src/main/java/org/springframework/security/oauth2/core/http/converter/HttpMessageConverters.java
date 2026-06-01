@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,12 @@
 
 package org.springframework.security.oauth2.core.http.converter;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.http.converter.GenericHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
+import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.http.converter.json.JsonbHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.util.ClassUtils;
@@ -32,6 +35,8 @@ import org.springframework.util.ClassUtils;
  */
 final class HttpMessageConverters {
 
+	private static final boolean jacksonPresent;
+
 	private static final boolean jackson2Present;
 
 	private static final boolean gsonPresent;
@@ -40,6 +45,7 @@ final class HttpMessageConverters {
 
 	static {
 		ClassLoader classLoader = HttpMessageConverters.class.getClassLoader();
+		jacksonPresent = ClassUtils.isPresent("tools.jackson.databind.json.JsonMapper", classLoader);
 		jackson2Present = ClassUtils.isPresent("com.fasterxml.jackson.databind.ObjectMapper", classLoader)
 				&& ClassUtils.isPresent("com.fasterxml.jackson.core.JsonGenerator", classLoader);
 		gsonPresent = ClassUtils.isPresent("com.google.gson.Gson", classLoader);
@@ -49,7 +55,11 @@ final class HttpMessageConverters {
 	private HttpMessageConverters() {
 	}
 
-	static GenericHttpMessageConverter<Object> getJsonMessageConverter() {
+	@SuppressWarnings("removal")
+	static @Nullable GenericHttpMessageConverter<Object> getJsonMessageConverter() {
+		if (jacksonPresent) {
+			return new GenericHttpMessageConverterAdapter<>(new JacksonJsonHttpMessageConverter());
+		}
 		if (jackson2Present) {
 			return new MappingJackson2HttpMessageConverter();
 		}

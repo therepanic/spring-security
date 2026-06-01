@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,18 @@
 
 package org.springframework.security.oauth2.client;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -41,13 +44,13 @@ import org.springframework.util.CollectionUtils;
  */
 public final class OAuth2AuthorizeRequest {
 
-	private String clientRegistrationId;
+	private @Nullable String clientRegistrationId;
 
-	private OAuth2AuthorizedClient authorizedClient;
+	private @Nullable OAuth2AuthorizedClient authorizedClient;
 
-	private Authentication principal;
+	private @Nullable Authentication principal;
 
-	private Map<String, Object> attributes;
+	private @Nullable Map<String, Object> attributes;
 
 	private OAuth2AuthorizeRequest() {
 	}
@@ -57,6 +60,7 @@ public final class OAuth2AuthorizeRequest {
 	 * @return the identifier for the client registration
 	 */
 	public String getClientRegistrationId() {
+		Assert.notNull(this.clientRegistrationId, "clientRegistrationId cannot be null");
 		return this.clientRegistrationId;
 	}
 
@@ -65,8 +69,7 @@ public final class OAuth2AuthorizeRequest {
 	 * was not provided.
 	 * @return the {@link OAuth2AuthorizedClient} or {@code null} if it was not provided
 	 */
-	@Nullable
-	public OAuth2AuthorizedClient getAuthorizedClient() {
+	public @Nullable OAuth2AuthorizedClient getAuthorizedClient() {
 		return this.authorizedClient;
 	}
 
@@ -75,6 +78,7 @@ public final class OAuth2AuthorizeRequest {
 	 * @return the {@code Principal} (to be) associated to the authorized client
 	 */
 	public Authentication getPrincipal() {
+		Assert.notNull(this.principal, "principal cannot be null");
 		return this.principal;
 	}
 
@@ -83,6 +87,7 @@ public final class OAuth2AuthorizeRequest {
 	 * @return a {@code Map} of the attributes associated to the request
 	 */
 	public Map<String, Object> getAttributes() {
+		Assert.notNull(this.attributes, "attributes cannot be null");
 		return this.attributes;
 	}
 
@@ -93,9 +98,8 @@ public final class OAuth2AuthorizeRequest {
 	 * @param <T> the type of the attribute
 	 * @return the value of the attribute associated to the request
 	 */
-	@Nullable
 	@SuppressWarnings("unchecked")
-	public <T> T getAttribute(String name) {
+	public <T> @Nullable T getAttribute(String name) {
 		return (T) this.getAttributes().get(name);
 	}
 
@@ -125,13 +129,13 @@ public final class OAuth2AuthorizeRequest {
 	 */
 	public static final class Builder {
 
-		private String clientRegistrationId;
+		private @Nullable String clientRegistrationId;
 
-		private OAuth2AuthorizedClient authorizedClient;
+		private @Nullable OAuth2AuthorizedClient authorizedClient;
 
-		private Authentication principal;
+		private @Nullable Authentication principal;
 
-		private Map<String, Object> attributes;
+		private @Nullable Map<String, Object> attributes;
 
 		private Builder(String clientRegistrationId) {
 			Assert.hasText(clientRegistrationId, "clientRegistrationId cannot be empty");
@@ -157,7 +161,7 @@ public final class OAuth2AuthorizeRequest {
 
 		private static Authentication createAuthentication(final String principalName) {
 			Assert.hasText(principalName, "principalName cannot be empty");
-			return new AbstractAuthenticationToken(null) {
+			return new AbstractAuthenticationToken((Collection<? extends GrantedAuthority>) null) {
 
 				@Override
 				public Object getCredentials() {

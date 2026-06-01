@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.ApplicationContextException;
 import org.springframework.core.log.LogMessage;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementSetter;
@@ -65,6 +69,7 @@ import org.springframework.util.Assert;
  *
  * @author Luke Taylor
  * @author Junhyeok Lee
+ * @author Andrey Litvitski
  * @since 2.0
  */
 public class JdbcUserDetailsManager extends JdbcDaoImpl
@@ -157,7 +162,8 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 
 	private String deleteGroupAuthoritySql = DEF_DELETE_GROUP_AUTHORITY_SQL;
 
-	private AuthenticationManager authenticationManager;
+	@SuppressWarnings("NullAway.Init")
+	private @Nullable AuthenticationManager authenticationManager;
 
 	private UserCache userCache = new NullUserCache();
 
@@ -305,7 +311,8 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 	}
 
 	@Override
-	public void changePassword(String oldPassword, String newPassword) throws AuthenticationException {
+	public void changePassword(@Nullable String oldPassword, @Nullable String newPassword)
+			throws AuthenticationException {
 		Authentication currentUser = this.securityContextHolderStrategy.getContext().getAuthentication();
 		if (currentUser == null) {
 			// This would indicate bad coding somewhere
@@ -332,7 +339,7 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 		this.userCache.removeUserFromCache(username);
 	}
 
-	protected Authentication createNewAuthentication(Authentication currentAuth, String newPassword) {
+	protected Authentication createNewAuthentication(Authentication currentAuth, @Nullable String newPassword) {
 		UserDetails user = loadUserByUsername(currentAuth.getName());
 		UsernamePasswordAuthenticationToken newAuthentication = UsernamePasswordAuthenticationToken.authenticated(user,
 				null, user.getAuthorities());
@@ -343,8 +350,8 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 	@Override
 	public boolean userExists(String username) {
 		@SuppressWarnings("ConstantConditions")
-		int usersCount = getJdbcTemplate().queryForObject(this.userExistsSql, Integer.class, username);
-		if (usersCount > 1) {
+		Integer usersCount = requireJdbcTemplate().queryForObject(this.userExistsSql, Integer.class, username);
+		if (usersCount == null || usersCount > 1) {
 			throw new IncorrectResultSizeDataAccessException(
 					"[" + usersCount + "] users found with name '" + username + "', expected 1", 1);
 		}
@@ -353,13 +360,23 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 
 	@Override
 	public List<String> findAllGroups() {
-		return requireJdbcTemplate().queryForList(this.findAllGroupsSql, String.class);
+		// @formatter:off
+		return requireJdbcTemplate().queryForList(this.findAllGroupsSql, String.class)
+			.stream()
+			.filter(Objects::nonNull)
+			.collect(Collectors.toList());
+		// @formatter:on
 	}
 
 	@Override
 	public List<String> findUsersInGroup(String groupName) {
 		Assert.hasText(groupName, "groupName should have text");
-		return requireJdbcTemplate().queryForList(this.findUsersInGroupSql, String.class, groupName);
+		// @formatter:off
+		return requireJdbcTemplate().queryForList(this.findUsersInGroupSql, String.class, groupName)
+			.stream()
+			.filter(Objects::nonNull)
+			.collect(Collectors.toList());
+		// @formatter:on
 	}
 
 	@Override
@@ -461,7 +478,11 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 	}
 
 	private int findGroupId(String group) {
-		return requireJdbcTemplate().queryForObject(this.findGroupIdSql, Integer.class, group);
+		Integer groupId = requireJdbcTemplate().queryForObject(this.findGroupIdSql, Integer.class, group);
+		if (groupId == null) {
+			throw new EmptyResultDataAccessException("Could not find required group '" + group + "'", 1);
+		}
+		return groupId;
 	}
 
 	private JdbcTemplate requireJdbcTemplate() {
@@ -630,9 +651,13 @@ public class JdbcUserDetailsManager extends JdbcDaoImpl
 	 * @since 7.0
 	 */
 	@Override
-	public UserDetails updatePassword(UserDetails user, String newPassword) {
+	public UserDetails updatePassword(UserDetails user, @Nullable String newPassword) {
 		if (this.enableUpdatePassword) {
-			UserDetails updated = User.withUserDetails(user).password(newPassword).build();
+			// @formatter:off
+			UserDetails updated = User.withUserDetails(user)
+				.password(newPassword)
+				.build();
+			// @formatter:on
 			updateUser(updated);
 			return updated;
 		}

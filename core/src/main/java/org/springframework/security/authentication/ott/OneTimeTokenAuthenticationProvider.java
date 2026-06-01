@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,15 @@
 
 package org.springframework.security.authentication.ott;
 
+import java.util.Collection;
+import java.util.HashSet;
+
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -34,6 +39,8 @@ import org.springframework.util.Assert;
  * @since 6.4
  */
 public final class OneTimeTokenAuthenticationProvider implements AuthenticationProvider {
+
+	private static final String AUTHORITY = FactorGrantedAuthority.OTT_AUTHORITY;
 
 	private final OneTimeTokenService oneTimeTokenService;
 
@@ -56,8 +63,9 @@ public final class OneTimeTokenAuthenticationProvider implements AuthenticationP
 		}
 		try {
 			UserDetails user = this.userDetailsService.loadUserByUsername(consumed.getUsername());
-			OneTimeTokenAuthenticationToken authenticated = OneTimeTokenAuthenticationToken.authenticated(user,
-					user.getAuthorities());
+			Collection<GrantedAuthority> authorities = new HashSet<>(user.getAuthorities());
+			authorities.add(FactorGrantedAuthority.fromAuthority(AUTHORITY));
+			OneTimeTokenAuthentication authenticated = new OneTimeTokenAuthentication(user, authorities);
 			authenticated.setDetails(otpAuthenticationToken.getDetails());
 			return authenticated;
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.converter.Converter;
@@ -104,7 +104,7 @@ public class SpringReactiveOpaqueTokenIntrospectorTests {
 			+ "     }";
 	// @formatter:on
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final JsonMapper mapper = new JsonMapper();
 
 	@Test
 	public void authenticateWhenActiveTokenThenOk() throws Exception {
@@ -306,6 +306,33 @@ public class SpringReactiveOpaqueTokenIntrospectorTests {
 					.containsEntry(OAuth2TokenIntrospectionClaimNames.USERNAME, "client&1");
 			// @formatter:on
 		}
+	}
+
+	@Test
+	public void builderWhenPostProcessorSetThenApplied() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			server.setDispatcher(requiresAuth(CLIENT_ID, CLIENT_SECRET, ACTIVE_RESPONSE));
+			String introspectUri = server.url("/introspect").toString();
+			Converter<OAuth2TokenIntrospectionClaimAccessor, Mono<? extends OAuth2AuthenticatedPrincipal>> authenticationConverter = mock(
+					Converter.class);
+			OAuth2AuthenticatedPrincipal principal = mock(OAuth2AuthenticatedPrincipal.class);
+			given(authenticationConverter.convert(any())).willReturn((Mono) Mono.just(principal));
+			ReactiveOpaqueTokenIntrospector introspector = SpringReactiveOpaqueTokenIntrospector
+				.withIntrospectionUri(introspectUri)
+				.clientId(CLIENT_ID)
+				.clientSecret(CLIENT_SECRET)
+				.postProcessor((i) -> i.setAuthenticationConverter(authenticationConverter))
+				.build();
+			OAuth2AuthenticatedPrincipal result = introspector.introspect("token").block();
+			assertThat(result).isSameAs(principal);
+		}
+	}
+
+	// gh-19201
+	@Test
+	public void builderWhenMissingClientCredentialsThenThrowsException() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+			.isThrownBy(() -> SpringReactiveOpaqueTokenIntrospector.withIntrospectionUri(INTROSPECTION_URL).build());
 	}
 
 	private WebClient mockResponse(String response) {

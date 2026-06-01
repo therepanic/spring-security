@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.security.oauth2.core.endpoint;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +30,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.springframework.security.core.SpringSecurityCoreVersion;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -52,31 +54,49 @@ import org.springframework.web.util.UriUtils;
  * "https://tools.ietf.org/html/rfc6749#section-4.1.1">Section 4.1.1 Authorization Code
  * Grant Request</a>
  */
-public final class OAuth2AuthorizationRequest implements Serializable {
+public class OAuth2AuthorizationRequest implements Serializable {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	@Serial
+	private static final long serialVersionUID = 620L;
 
-	private String authorizationUri;
+	private final String authorizationUri;
 
-	private AuthorizationGrantType authorizationGrantType;
+	private final AuthorizationGrantType authorizationGrantType;
 
-	private OAuth2AuthorizationResponseType responseType;
+	private final OAuth2AuthorizationResponseType responseType;
 
-	private String clientId;
+	private final String clientId;
 
-	private String redirectUri;
+	private final @Nullable String redirectUri;
 
-	private Set<String> scopes;
+	private final Set<String> scopes;
 
-	private String state;
+	private final @Nullable String state;
 
-	private Map<String, Object> additionalParameters;
+	private final Map<String, Object> additionalParameters;
 
-	private String authorizationRequestUri;
+	private final String authorizationRequestUri;
 
-	private Map<String, Object> attributes;
+	private final Map<String, Object> attributes;
 
-	private OAuth2AuthorizationRequest() {
+	protected OAuth2AuthorizationRequest(AbstractBuilder<?, ?> builder) {
+		Assert.notNull(builder.authorizationUri, "authorizationUri cannot be null");
+		Assert.notNull(builder.clientId, "clientId cannot be null");
+		Assert.hasText(builder.authorizationUri, "authorizationUri cannot be empty");
+		Assert.hasText(builder.clientId, "clientId cannot be empty");
+		this.authorizationUri = builder.authorizationUri;
+		this.authorizationGrantType = builder.authorizationGrantType;
+		this.responseType = builder.responseType;
+		this.clientId = builder.clientId;
+		this.redirectUri = builder.redirectUri;
+		this.scopes = Collections.unmodifiableSet(
+				CollectionUtils.isEmpty(builder.scopes) ? Collections.emptySet() : new LinkedHashSet<>(builder.scopes));
+		this.state = builder.state;
+		this.additionalParameters = Collections.unmodifiableMap(builder.additionalParameters);
+		String builderAuthorizationRequestUri = builder.authorizationRequestUri;
+		this.authorizationRequestUri = StringUtils.hasText(builderAuthorizationRequestUri)
+				? builderAuthorizationRequestUri : builder.buildAuthorizationRequestUri();
+		this.attributes = Collections.unmodifiableMap(builder.attributes);
 	}
 
 	/**
@@ -112,10 +132,10 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 	}
 
 	/**
-	 * Returns the uri for the redirection endpoint.
-	 * @return the uri for the redirection endpoint
+	 * Returns the uri for the redirection endpoint, or {@code null} if not present.
+	 * @return the uri for the redirection endpoint, or {@code null}
 	 */
-	public String getRedirectUri() {
+	public @Nullable String getRedirectUri() {
 		return this.redirectUri;
 	}
 
@@ -128,10 +148,10 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 	}
 
 	/**
-	 * Returns the state.
-	 * @return the state
+	 * Returns the state, or {@code null} if not present.
+	 * @return the state, or {@code null}
 	 */
-	public String getState() {
+	public @Nullable String getState() {
 		return this.state;
 	}
 
@@ -162,7 +182,7 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 	 * @since 5.2
 	 */
 	@SuppressWarnings("unchecked")
-	public <T> T getAttribute(String name) {
+	public <T> @Nullable T getAttribute(String name) {
 		return (T) this.getAttributes().get(name);
 	}
 
@@ -186,11 +206,11 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 	 * @return the {@link Builder}
 	 */
 	public static Builder authorizationCode() {
-		return new Builder(AuthorizationGrantType.AUTHORIZATION_CODE);
+		return new Builder();
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (this == obj) {
 			return true;
 		}
@@ -227,7 +247,7 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 	public static Builder from(OAuth2AuthorizationRequest authorizationRequest) {
 		Assert.notNull(authorizationRequest, "authorizationRequest cannot be null");
 		// @formatter:off
-		return new Builder(authorizationRequest.getGrantType())
+		return new Builder()
 				.authorizationUri(authorizationRequest.getAuthorizationUri())
 				.clientId(authorizationRequest.getClientId())
 				.redirectUri(authorizationRequest.getRedirectUri())
@@ -241,21 +261,40 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 	/**
 	 * A builder for {@link OAuth2AuthorizationRequest}.
 	 */
-	public static final class Builder {
+	public static class Builder extends AbstractBuilder<OAuth2AuthorizationRequest, Builder> {
 
-		private String authorizationUri;
+		/**
+		 * Builds a new {@link OAuth2AuthorizationRequest}.
+		 * @return a {@link OAuth2AuthorizationRequest}
+		 */
+		@Override
+		public OAuth2AuthorizationRequest build() {
+			return new OAuth2AuthorizationRequest(this);
+		}
 
-		private AuthorizationGrantType authorizationGrantType;
+	}
 
-		private OAuth2AuthorizationResponseType responseType;
+	/**
+	 * A builder for subclasses of {@link OAuth2AuthorizationRequest}.
+	 *
+	 * @param <T> the type of authorization request
+	 * @param <B> the type of the builder
+	 */
+	protected abstract static class AbstractBuilder<T extends OAuth2AuthorizationRequest, B extends AbstractBuilder<T, B>> {
 
-		private String clientId;
+		private @Nullable String authorizationUri;
 
-		private String redirectUri;
+		private final AuthorizationGrantType authorizationGrantType = AuthorizationGrantType.AUTHORIZATION_CODE;
 
-		private Set<String> scopes;
+		private final OAuth2AuthorizationResponseType responseType = OAuth2AuthorizationResponseType.CODE;
 
-		private String state;
+		private @Nullable String clientId;
+
+		private @Nullable String redirectUri;
+
+		private @Nullable Set<String> scopes;
+
+		private @Nullable String state;
 
 		private Map<String, Object> additionalParameters = new LinkedHashMap<>();
 
@@ -264,18 +303,13 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 
 		private Map<String, Object> attributes = new LinkedHashMap<>();
 
-		private String authorizationRequestUri;
+		private @Nullable String authorizationRequestUri;
 
 		private Function<UriBuilder, URI> authorizationRequestUriFunction = (builder) -> builder.build();
 
 		private final DefaultUriBuilderFactory uriBuilderFactory;
 
-		private Builder(AuthorizationGrantType authorizationGrantType) {
-			Assert.notNull(authorizationGrantType, "authorizationGrantType cannot be null");
-			this.authorizationGrantType = authorizationGrantType;
-			if (AuthorizationGrantType.AUTHORIZATION_CODE.equals(authorizationGrantType)) {
-				this.responseType = OAuth2AuthorizationResponseType.CODE;
-			}
+		protected AbstractBuilder() {
 			this.uriBuilderFactory = new DefaultUriBuilderFactory();
 			// The supplied authorizationUri may contain encoded parameters
 			// so disable encoding in UriBuilder and instead apply encoding within this
@@ -283,78 +317,85 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 			this.uriBuilderFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.NONE);
 		}
 
+		@SuppressWarnings("unchecked")
+		protected final B getThis() {
+			// avoid unchecked casts in subclasses by using "getThis()" instead of "(B)
+			// this"
+			return (B) this;
+		}
+
 		/**
 		 * Sets the uri for the authorization endpoint.
 		 * @param authorizationUri the uri for the authorization endpoint
-		 * @return the {@link Builder}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder authorizationUri(String authorizationUri) {
+		public B authorizationUri(String authorizationUri) {
 			this.authorizationUri = authorizationUri;
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the client identifier.
 		 * @param clientId the client identifier
-		 * @return the {@link Builder}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder clientId(String clientId) {
+		public B clientId(String clientId) {
 			this.clientId = clientId;
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the uri for the redirection endpoint.
-		 * @param redirectUri the uri for the redirection endpoint
-		 * @return the {@link Builder}
+		 * @param redirectUri the uri for the redirection endpoint, may be {@code null}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder redirectUri(String redirectUri) {
+		public B redirectUri(@Nullable String redirectUri) {
 			this.redirectUri = redirectUri;
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the scope(s).
-		 * @param scope the scope(s)
-		 * @return the {@link Builder}
+		 * @param scope the scope(s), may be {@code null}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder scope(String... scope) {
+		public B scope(@Nullable String... scope) {
 			if (scope != null && scope.length > 0) {
 				return scopes(new LinkedHashSet<>(Arrays.asList(scope)));
 			}
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the scope(s).
-		 * @param scopes the scope(s)
-		 * @return the {@link Builder}
+		 * @param scopes the scope(s), may be {@code null}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder scopes(Set<String> scopes) {
+		public B scopes(@Nullable Set<String> scopes) {
 			this.scopes = scopes;
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the state.
-		 * @param state the state
-		 * @return the {@link Builder}
+		 * @param state the state, may be {@code null}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder state(String state) {
+		public B state(@Nullable String state) {
 			this.state = state;
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the additional parameter(s) used in the request.
 		 * @param additionalParameters the additional parameter(s) used in the request
-		 * @return the {@link Builder}
+		 * @return the {@link AbstractBuilder}
 		 */
-		public Builder additionalParameters(Map<String, Object> additionalParameters) {
+		public B additionalParameters(Map<String, Object> additionalParameters) {
 			if (!CollectionUtils.isEmpty(additionalParameters)) {
 				this.additionalParameters.putAll(additionalParameters);
 			}
-			return this;
+			return getThis();
 		}
 
 		/**
@@ -362,52 +403,55 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 		 * allowing the ability to add, replace, or remove.
 		 * @param additionalParametersConsumer a {@code Consumer} of the additional
 		 * parameters
+		 * @return the {@link AbstractBuilder}
 		 * @since 5.3
 		 */
-		public Builder additionalParameters(Consumer<Map<String, Object>> additionalParametersConsumer) {
+		public B additionalParameters(Consumer<Map<String, Object>> additionalParametersConsumer) {
 			if (additionalParametersConsumer != null) {
 				additionalParametersConsumer.accept(this.additionalParameters);
 			}
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * A {@code Consumer} to be provided access to all the parameters allowing the
 		 * ability to add, replace, or remove.
 		 * @param parametersConsumer a {@code Consumer} of all the parameters
+		 * @return the {@link AbstractBuilder}
 		 * @since 5.3
 		 */
-		public Builder parameters(Consumer<Map<String, Object>> parametersConsumer) {
+		public B parameters(Consumer<Map<String, Object>> parametersConsumer) {
 			if (parametersConsumer != null) {
 				this.parametersConsumer = parametersConsumer;
 			}
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * Sets the attributes associated to the request.
 		 * @param attributes the attributes associated to the request
-		 * @return the {@link Builder}
+		 * @return the {@link AbstractBuilder}
 		 * @since 5.2
 		 */
-		public Builder attributes(Map<String, Object> attributes) {
+		public B attributes(Map<String, Object> attributes) {
 			if (!CollectionUtils.isEmpty(attributes)) {
 				this.attributes.putAll(attributes);
 			}
-			return this;
+			return getThis();
 		}
 
 		/**
 		 * A {@code Consumer} to be provided access to the attribute(s) allowing the
 		 * ability to add, replace, or remove.
 		 * @param attributesConsumer a {@code Consumer} of the attribute(s)
+		 * @return the {@link AbstractBuilder}
 		 * @since 5.3
 		 */
-		public Builder attributes(Consumer<Map<String, Object>> attributesConsumer) {
+		public B attributes(Consumer<Map<String, Object>> attributesConsumer) {
 			if (attributesConsumer != null) {
 				attributesConsumer.accept(this.attributes);
 			}
-			return this;
+			return getThis();
 		}
 
 		/**
@@ -419,12 +463,12 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 		 * {@code application/x-www-form-urlencoded} MIME format.
 		 * @param authorizationRequestUri the {@code URI} string representation of the
 		 * OAuth 2.0 Authorization Request
-		 * @return the {@link Builder}
+		 * @return the {@link AbstractBuilder}
 		 * @since 5.1
 		 */
-		public Builder authorizationRequestUri(String authorizationRequestUri) {
+		public B authorizationRequestUri(String authorizationRequestUri) {
 			this.authorizationRequestUri = authorizationRequestUri;
-			return this;
+			return getThis();
 		}
 
 		/**
@@ -432,37 +476,17 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 		 * OAuth 2.0 Authorization Request allowing for further customizations.
 		 * @param authorizationRequestUriFunction a {@code Function} to be provided a
 		 * {@code UriBuilder} representation of the OAuth 2.0 Authorization Request
+		 * @return the {@link AbstractBuilder}
 		 * @since 5.3
 		 */
-		public Builder authorizationRequestUri(Function<UriBuilder, URI> authorizationRequestUriFunction) {
+		public B authorizationRequestUri(Function<UriBuilder, URI> authorizationRequestUriFunction) {
 			if (authorizationRequestUriFunction != null) {
 				this.authorizationRequestUriFunction = authorizationRequestUriFunction;
 			}
-			return this;
+			return getThis();
 		}
 
-		/**
-		 * Builds a new {@link OAuth2AuthorizationRequest}.
-		 * @return a {@link OAuth2AuthorizationRequest}
-		 */
-		public OAuth2AuthorizationRequest build() {
-			Assert.hasText(this.authorizationUri, "authorizationUri cannot be empty");
-			Assert.hasText(this.clientId, "clientId cannot be empty");
-			OAuth2AuthorizationRequest authorizationRequest = new OAuth2AuthorizationRequest();
-			authorizationRequest.authorizationUri = this.authorizationUri;
-			authorizationRequest.authorizationGrantType = this.authorizationGrantType;
-			authorizationRequest.responseType = this.responseType;
-			authorizationRequest.clientId = this.clientId;
-			authorizationRequest.redirectUri = this.redirectUri;
-			authorizationRequest.state = this.state;
-			authorizationRequest.scopes = Collections.unmodifiableSet(
-					CollectionUtils.isEmpty(this.scopes) ? Collections.emptySet() : new LinkedHashSet<>(this.scopes));
-			authorizationRequest.additionalParameters = Collections.unmodifiableMap(this.additionalParameters);
-			authorizationRequest.attributes = Collections.unmodifiableMap(this.attributes);
-			authorizationRequest.authorizationRequestUri = StringUtils.hasText(this.authorizationRequestUri)
-					? this.authorizationRequestUri : this.buildAuthorizationRequestUri();
-			return authorizationRequest;
-		}
+		public abstract T build();
 
 		private String buildAuthorizationRequestUri() {
 			Map<String, Object> parameters = getParameters(); // Not encoded
@@ -483,11 +507,12 @@ public final class OAuth2AuthorizationRequest implements Serializable {
 					queryParams.set(key, encodeQueryParam(String.valueOf(v)));
 				}
 			});
+			Assert.notNull(this.authorizationUri, "authorizationUri cannot be null");
 			UriBuilder uriBuilder = this.uriBuilderFactory.uriString(this.authorizationUri).queryParams(queryParams);
 			return this.authorizationRequestUriFunction.apply(uriBuilder).toString();
 		}
 
-		private Map<String, Object> getParameters() {
+		protected Map<String, Object> getParameters() {
 			Map<String, Object> parameters = new LinkedHashMap<>();
 			parameters.put(OAuth2ParameterNames.RESPONSE_TYPE, this.responseType.getValue());
 			parameters.put(OAuth2ParameterNames.CLIENT_ID, this.clientId);

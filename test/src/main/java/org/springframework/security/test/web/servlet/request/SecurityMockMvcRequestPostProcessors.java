@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.io.DefaultResourceLoader;
@@ -146,7 +147,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 	/**
 	 * Populates the provided X509Certificate instances on the request.
-	 * @param certificates the X509Certificate instances to pouplate
+	 * @param certificates the X509Certificate instances to populate
 	 * @return the
 	 * {@link org.springframework.test.web.servlet.request.RequestPostProcessor} to use.
 	 */
@@ -155,7 +156,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 	}
 
 	/**
-	 * Finds an X509Cetificate using a resoureName and populates it on the request.
+	 * Finds an X509Certificate using a resourceName and populates it on the request.
 	 * @param resourceName the name of the X509Certificate resource
 	 * @return the
 	 * {@link org.springframework.test.web.servlet.request.RequestPostProcessor} to use.
@@ -517,6 +518,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 		public MockHttpServletRequest postProcessRequest(MockHttpServletRequest request) {
 			CsrfTokenRepository repository = WebTestUtils.getCsrfTokenRepository(request);
 			CsrfTokenRequestHandler handler = WebTestUtils.getCsrfTokenRequestHandler(request);
+			Assert.isTrue(handler != null, "No CsrfTokenRequestHandler found");
 			if (!(repository instanceof TestCsrfTokenRepository)) {
 				repository = new TestCsrfTokenRepository(new HttpSessionCsrfTokenRepository());
 				WebTestUtils.setCsrfTokenRepository(request, repository);
@@ -526,6 +528,9 @@ public final class SecurityMockMvcRequestPostProcessors {
 			DeferredCsrfToken deferredCsrfToken = repository.loadDeferredToken(request, response);
 			handler.handle(request, response, deferredCsrfToken);
 			CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+			if (token == null) {
+				return request;
+			}
 			String tokenValue = this.useInvalidToken ? INVALID_TOKEN_VALUE : token.getToken();
 			if (this.asHeader) {
 				request.addHeader(token.getHeaderName(), tokenValue);
@@ -577,7 +582,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 			}
 
 			@Override
-			public void saveToken(CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
+			public void saveToken(@Nullable CsrfToken token, HttpServletRequest request, HttpServletResponse response) {
 				if (isEnabled(request)) {
 					request.setAttribute(TOKEN_ATTR_NAME, token);
 				}
@@ -587,7 +592,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 			}
 
 			@Override
-			public CsrfToken loadToken(HttpServletRequest request) {
+			public @Nullable CsrfToken loadToken(HttpServletRequest request) {
 				if (isEnabled(request)) {
 					return (CsrfToken) request.getAttribute(TOKEN_ATTR_NAME);
 				}
@@ -697,8 +702,9 @@ public final class SecurityMockMvcRequestPostProcessors {
 		 * @return the MD5 of the digest authentication response, encoded in hex
 		 * @throws IllegalArgumentException if the supplied qop value is unsupported.
 		 */
-		private static String generateDigest(String username, String realm, String password, String httpMethod,
-				String uri, String qop, String nonce, String nc, String cnonce) throws IllegalArgumentException {
+		private static String generateDigest(String username, String realm, String password,
+				@Nullable String httpMethod, @Nullable String uri, String qop, String nonce, String nc, String cnonce)
+				throws IllegalArgumentException {
 			String a1Md5 = encodePasswordInA1Format(username, realm, password);
 			String a2 = httpMethod + ":" + uri;
 			String a2Md5 = md5Hex(a2);
@@ -1255,7 +1261,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 			return new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "token", issuedAt, expiresAt);
 		}
 
-		private Instant getInstant(Map<String, Object> attributes, String name) {
+		private @Nullable Instant getInstant(Map<String, Object> attributes, String name) {
 			Object value = attributes.get(name);
 			if (value == null) {
 				return null;
@@ -1407,13 +1413,14 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 		private OAuth2AccessToken accessToken;
 
-		private OidcIdToken idToken;
+		private @Nullable OidcIdToken idToken;
 
+		@SuppressWarnings("NullAway.Init")
 		private OidcUserInfo userInfo;
 
 		private Supplier<OidcUser> oidcUser = this::defaultPrincipal;
 
-		private Collection<GrantedAuthority> authorities;
+		private @Nullable Collection<GrantedAuthority> authorities;
 
 		private OidcLoginRequestPostProcessor(OAuth2AccessToken accessToken) {
 			this.accessToken = accessToken;
@@ -1550,7 +1557,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 		private String registrationId = "test";
 
-		private ClientRegistration clientRegistration;
+		private @Nullable ClientRegistration clientRegistration;
 
 		private String principalName = "user";
 
@@ -1620,12 +1627,17 @@ public final class SecurityMockMvcRequestPostProcessors {
 					this.accessToken);
 			OAuth2AuthorizedClientRepository authorizedClientRepository = OAuth2ClientServletTestUtils
 				.getAuthorizedClientRepository(request);
+			Assert.isTrue(authorizedClientRepository != null,
+					"Could not find OAuth2AuthorizedClientRepository on the request");
 			if (!(authorizedClientRepository instanceof TestOAuth2AuthorizedClientRepository)) {
 				authorizedClientRepository = new TestOAuth2AuthorizedClientRepository(authorizedClientRepository);
 				OAuth2ClientServletTestUtils.setAuthorizedClientRepository(request, authorizedClientRepository);
 			}
 			TestOAuth2AuthorizedClientRepository.enable(request);
-			authorizedClientRepository.saveAuthorizedClient(client, null, request, new MockHttpServletResponse());
+			Authentication anonymousPrincipal = new AnonymousAuthenticationToken("anonymous", "anonymousUser",
+					AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+			authorizedClientRepository.saveAuthorizedClient(client, anonymousPrincipal, request,
+					new MockHttpServletResponse());
 			return request;
 		}
 
@@ -1650,16 +1662,16 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 			private final OAuth2AuthorizedClientManager delegate;
 
-			private OAuth2AuthorizedClientRepository authorizedClientRepository;
+			private @Nullable OAuth2AuthorizedClientRepository authorizedClientRepository;
 
 			TestOAuth2AuthorizedClientManager(OAuth2AuthorizedClientManager delegate) {
 				this.delegate = delegate;
 			}
 
 			@Override
-			public OAuth2AuthorizedClient authorize(OAuth2AuthorizeRequest authorizeRequest) {
+			public @Nullable OAuth2AuthorizedClient authorize(OAuth2AuthorizeRequest authorizeRequest) {
 				HttpServletRequest request = authorizeRequest.getAttribute(HttpServletRequest.class.getName());
-				if (isEnabled(request)) {
+				if (request != null && isEnabled(request) && this.authorizedClientRepository != null) {
 					return this.authorizedClientRepository.loadAuthorizedClient(
 							authorizeRequest.getClientRegistrationId(), authorizeRequest.getPrincipal(), request);
 				}
@@ -1670,8 +1682,8 @@ public final class SecurityMockMvcRequestPostProcessors {
 				request.setAttribute(ENABLED_ATTR_NAME, Boolean.TRUE);
 			}
 
-			boolean isEnabled(HttpServletRequest request) {
-				return Boolean.TRUE.equals(request.getAttribute(ENABLED_ATTR_NAME));
+			boolean isEnabled(@Nullable HttpServletRequest request) {
+				return request != null && Boolean.TRUE.equals(request.getAttribute(ENABLED_ATTR_NAME));
 			}
 
 		}
@@ -1694,7 +1706,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 			}
 
 			@Override
-			public <T extends OAuth2AuthorizedClient> T loadAuthorizedClient(String clientRegistrationId,
+			public <T extends OAuth2AuthorizedClient> @Nullable T loadAuthorizedClient(String clientRegistrationId,
 					Authentication principal, HttpServletRequest request) {
 				if (isEnabled(request)) {
 					return (T) request.getAttribute(TOKEN_ATTR_NAME);
@@ -1748,7 +1760,8 @@ public final class SecurityMockMvcRequestPostProcessors {
 			 * @return the {@link OAuth2AuthorizedClientManager} for the specified
 			 * {@link HttpServletRequest}
 			 */
-			static OAuth2AuthorizedClientRepository getAuthorizedClientRepository(HttpServletRequest request) {
+			static @Nullable OAuth2AuthorizedClientRepository getAuthorizedClientRepository(
+					HttpServletRequest request) {
 				OAuth2AuthorizedClientManager manager = getOAuth2AuthorizedClientManager(request);
 				if (manager == null) {
 					return DEFAULT_CLIENT_REPO;
@@ -1781,7 +1794,8 @@ public final class SecurityMockMvcRequestPostProcessors {
 				((TestOAuth2AuthorizedClientManager) manager).authorizedClientRepository = repository;
 			}
 
-			static OAuth2AuthorizedClientManager getOAuth2AuthorizedClientManager(HttpServletRequest request) {
+			static @Nullable OAuth2AuthorizedClientManager getOAuth2AuthorizedClientManager(
+					HttpServletRequest request) {
 				OAuth2AuthorizedClientArgumentResolver resolver = findResolver(request,
 						OAuth2AuthorizedClientArgumentResolver.class);
 				if (resolver == null) {
@@ -1809,7 +1823,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 			}
 
 			@SuppressWarnings("unchecked")
-			static <T extends HandlerMethodArgumentResolver> T findResolver(HttpServletRequest request,
+			static <T extends HandlerMethodArgumentResolver> @Nullable T findResolver(HttpServletRequest request,
 					Class<T> resolverClass) {
 				if (!ClassUtils.isPresent(
 						"org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter", null)) {
@@ -1820,7 +1834,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 
 			private static class WebMvcClasspathGuard {
 
-				static <T extends HandlerMethodArgumentResolver> T findResolver(HttpServletRequest request,
+				static <T extends HandlerMethodArgumentResolver> @Nullable T findResolver(HttpServletRequest request,
 						Class<T> resolverClass) {
 					ServletContext servletContext = request.getServletContext();
 					RequestMappingHandlerAdapter mapping = getRequestMappingHandlerAdapter(servletContext);
@@ -1839,7 +1853,7 @@ public final class SecurityMockMvcRequestPostProcessors {
 					return null;
 				}
 
-				private static RequestMappingHandlerAdapter getRequestMappingHandlerAdapter(
+				private static @Nullable RequestMappingHandlerAdapter getRequestMappingHandlerAdapter(
 						ServletContext servletContext) {
 					WebApplicationContext context = WebApplicationContextUtils.getWebApplicationContext(servletContext);
 					if (context != null) {

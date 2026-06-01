@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.web.util;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Interface for handlers extracting the cause out of a specific {@link Throwable} type.
@@ -32,6 +34,6 @@ public interface ThrowableCauseExtractor {
 	 * @throws IllegalArgumentException if <code>throwable</code> is <code>null</code> or
 	 * otherwise considered invalid for the implementation
 	 */
-	Throwable extractCause(Throwable throwable);
+	@Nullable Throwable extractCause(Throwable throwable);
 
 }

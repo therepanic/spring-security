@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.SecurityAssertions;
 import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.ObjectPostProcessor;
@@ -55,6 +56,7 @@ import org.springframework.security.config.annotation.web.configurers.oauth2.cli
 import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
 import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
+import org.springframework.security.config.web.PathPatternRequestMatcherBuilderFactoryBean;
 import org.springframework.security.context.DelegatingApplicationListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -106,6 +108,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.context.HttpRequestResponseHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.NullSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.servlet.TestMockHttpServletRequests;
 import org.springframework.security.web.session.HttpSessionDestroyedEvent;
@@ -116,6 +119,7 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
@@ -215,10 +219,9 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OAuth2UserAuthority.class)
-			.hasToString("OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication)
+			.hasAuthority("OAUTH2_USER")
+			.isInstanceOf(OAuth2UserAuthority.class);
 	}
 
 	@Test
@@ -232,10 +235,9 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OAuth2UserAuthority.class)
-			.hasToString("OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication)
+			.hasAuthority("OAUTH2_USER")
+			.isInstanceOf(OAuth2UserAuthority.class);
 		SecurityContextHolderStrategy strategy = this.context.getBean(SecurityContextHolderStrategy.class);
 		verify(strategy, atLeastOnce()).getDeferredContext();
 		SecurityContextChangedListener listener = this.context.getBean(SecurityContextChangedListener.class);
@@ -253,10 +255,9 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OAuth2UserAuthority.class)
-			.hasToString("OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication)
+			.hasAuthority("OAUTH2_USER")
+			.isInstanceOf(OAuth2UserAuthority.class);
 	}
 
 	// gh-6009
@@ -294,9 +295,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(2);
-		assertThat(authentication.getAuthorities()).first().hasToString("OAUTH2_USER");
-		assertThat(authentication.getAuthorities()).last().hasToString("ROLE_OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthorities("OAUTH2_USER", "ROLE_OAUTH2_USER");
 	}
 
 	@Test
@@ -315,9 +314,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(2);
-		assertThat(authentication.getAuthorities()).first().hasToString("OAUTH2_USER");
-		assertThat(authentication.getAuthorities()).last().hasToString("ROLE_OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthorities("OAUTH2_USER", "ROLE_OAUTH2_USER");
 	}
 
 	@Test
@@ -336,9 +333,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(2);
-		assertThat(authentication.getAuthorities()).first().hasToString("OAUTH2_USER");
-		assertThat(authentication.getAuthorities()).last().hasToString("ROLE_OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthorities("OAUTH2_USER", "ROLE_OAUTH2_USER");
 	}
 
 	// gh-5488
@@ -359,10 +354,9 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OAuth2UserAuthority.class)
-			.hasToString("OAUTH2_USER");
+		SecurityAssertions.assertThat(authentication)
+			.hasAuthority("OAUTH2_USER")
+			.isInstanceOf(OAuth2UserAuthority.class);
 	}
 
 	// gh-5521
@@ -447,6 +441,18 @@ public class OAuth2LoginConfigurerTests {
 		then(redirectStrategy).should().sendRedirect(any(), any(), anyString());
 	}
 
+	// gh-19128
+	@Test
+	public void oauth2LoginWhenBuilderBeanWithBasePathThenLoginProcessingUrlIgnoresBasePath() throws Exception {
+		loadConfig(OAuth2LoginBuilderBeanConfig.class);
+		String requestUri = "/login/oauth2/code/google";
+		this.request = get(requestUri).build();
+		this.request.setParameter("code", "code123");
+		this.request.setParameter("state", "state123");
+		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
+		assertThat(this.response.getRedirectedUrl()).endsWith("/login?error");
+	}
+
 	// gh-5347
 	@Test
 	public void oauth2LoginWithOneClientConfiguredThenRedirectForAuthorization() throws Exception {
@@ -454,7 +460,7 @@ public class OAuth2LoginConfigurerTests {
 		String requestUri = "/";
 		this.request = get(requestUri).build();
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/oauth2/authorization/google");
+		assertThat(this.response.getRedirectedUrl()).matches("/oauth2/authorization/google");
 	}
 
 	// gh-6802
@@ -464,7 +470,7 @@ public class OAuth2LoginConfigurerTests {
 		String requestUri = "/";
 		this.request = get(requestUri).build();
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/login");
+		assertThat(this.response.getRedirectedUrl()).matches("/login");
 	}
 
 	// gh-5347
@@ -476,7 +482,7 @@ public class OAuth2LoginConfigurerTests {
 		this.request = get(requestUri).build();
 		this.request.addHeader(HttpHeaders.ACCEPT, new MediaType("image", "*").toString());
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/login");
+		assertThat(this.response.getRedirectedUrl()).matches("/login");
 	}
 
 	// gh-5347
@@ -486,7 +492,7 @@ public class OAuth2LoginConfigurerTests {
 		String requestUri = "/";
 		this.request = get(requestUri).build();
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/login");
+		assertThat(this.response.getRedirectedUrl()).matches("/login");
 	}
 
 	// gh-6812
@@ -531,7 +537,7 @@ public class OAuth2LoginConfigurerTests {
 		String requestUri = "/";
 		this.request = get(requestUri).build();
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/oauth2/authorization/google");
+		assertThat(this.response.getRedirectedUrl()).matches("/oauth2/authorization/google");
 	}
 
 	@Test
@@ -540,7 +546,7 @@ public class OAuth2LoginConfigurerTests {
 		String requestUri = "/";
 		this.request = get(requestUri).build();
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/custom-login");
+		assertThat(this.response.getRedirectedUrl()).matches("/custom-login");
 	}
 
 	@Test
@@ -549,7 +555,7 @@ public class OAuth2LoginConfigurerTests {
 		String requestUri = "/";
 		this.request = get(requestUri).build();
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
-		assertThat(this.response.getRedirectedUrl()).matches("http://localhost/custom-login");
+		assertThat(this.response.getRedirectedUrl()).matches("/custom-login");
 	}
 
 	@Test
@@ -568,10 +574,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OidcUserAuthority.class)
-			.hasToString("OIDC_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthority("OIDC_USER").isInstanceOf(OidcUserAuthority.class);
 	}
 
 	@Test
@@ -591,9 +594,7 @@ public class OAuth2LoginConfigurerTests {
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
 		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OidcUserAuthority.class)
-			.hasToString("OIDC_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthority("OIDC_USER").isInstanceOf(OidcUserAuthority.class);
 	}
 
 	@Test
@@ -612,9 +613,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(2);
-		assertThat(authentication.getAuthorities()).first().hasToString("OIDC_USER");
-		assertThat(authentication.getAuthorities()).last().hasToString("ROLE_OIDC_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthorities("OIDC_USER", "ROLE_OIDC_USER");
 	}
 
 	@Test
@@ -633,9 +632,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(2);
-		assertThat(authentication.getAuthorities()).first().hasToString("OIDC_USER");
-		assertThat(authentication.getAuthorities()).last().hasToString("ROLE_OIDC_USER");
+		SecurityAssertions.assertThat(authentication).hasAuthorities("OIDC_USER", "ROLE_OIDC_USER");
 	}
 
 	@Test
@@ -688,11 +685,7 @@ public class OAuth2LoginConfigurerTests {
 		Authentication authentication = this.securityContextRepository
 			.loadContext(new HttpRequestResponseHolder(this.request, this.response))
 			.getAuthentication();
-		assertThat(authentication.getAuthorities()).hasSize(1);
-		assertThat(authentication.getAuthorities()).first()
-			.isInstanceOf(OidcUserAuthority.class)
-			.hasToString("OIDC_USER");
-
+		SecurityAssertions.assertThat(authentication).hasAuthority("OIDC_USER").isInstanceOf(OidcUserAuthority.class);
 		// Ensure shared objects set for OAuth2 Client are not used
 		ClientRegistrationRepository clientRegistrationRepository = this.spring.getContext()
 			.getBean(ClientRegistrationRepository.class);
@@ -715,6 +708,12 @@ public class OAuth2LoginConfigurerTests {
 		this.springSecurityFilterChain.doFilter(this.request, this.response, this.filterChain);
 		// assertions
 		verify(this.context.getBean(SpyObjectPostProcessor.class).spy).authenticate(any());
+	}
+
+	// gh-16623
+	@Test
+	public void oauth2LoginWithCustomSecurityContextRepository() {
+		assertThatNoException().isThrownBy(() -> loadConfig(OAuth2LoginConfigSecurityContextRepository.class));
 	}
 
 	private void loadConfig(Class<?>... configs) {
@@ -798,6 +797,31 @@ public class OAuth2LoginConfigurerTests {
 		@Override
 		public void onApplicationEvent(AuthenticationSuccessEvent event) {
 			EVENTS.add(event);
+		}
+
+	}
+
+	// gh-19128
+	@Configuration
+	@EnableWebSecurity
+	static class OAuth2LoginBuilderBeanConfig extends CommonSecurityFilterChainConfig {
+
+		@Bean
+		PathPatternRequestMatcherBuilderFactoryBean requestMatcherBuilder() {
+			PathPatternRequestMatcherBuilderFactoryBean bean = new PathPatternRequestMatcherBuilderFactoryBean();
+			bean.setBasePath("/spring");
+			return bean;
+		}
+
+		@Bean
+		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.oauth2Login((login) -> login
+					.clientRegistrationRepository(
+						new InMemoryClientRegistrationRepository(GOOGLE_CLIENT_REGISTRATION)));
+			// @formatter:on
+			return super.configureFilterChain(http);
 		}
 
 	}
@@ -955,6 +979,24 @@ public class OAuth2LoginConfigurerTests {
 					.clientRegistrationRepository(
 						new InMemoryClientRegistrationRepository(GOOGLE_CLIENT_REGISTRATION))
 					.loginProcessingUrl("/login/oauth2/*"));
+			// @formatter:on
+			return super.configureFilterChain(http);
+		}
+
+	}
+
+	@Configuration
+	@EnableWebSecurity
+	static class OAuth2LoginConfigSecurityContextRepository extends CommonSecurityFilterChainConfig {
+
+		@Bean
+		SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+			// @formatter:off
+			http
+				.oauth2Login((login) -> login
+					.clientRegistrationRepository(
+							new InMemoryClientRegistrationRepository(GOOGLE_CLIENT_REGISTRATION))
+					.securityContextRepository(new NullSecurityContextRepository()));
 			// @formatter:on
 			return super.configureFilterChain(http);
 		}

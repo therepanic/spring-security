@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,11 @@ package org.springframework.security.oauth2.server.resource.authentication;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashSet;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -28,6 +30,7 @@ import org.springframework.security.authentication.AuthenticationServiceExceptio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal;
 import org.springframework.security.oauth2.core.OAuth2TokenIntrospectionClaimNames;
@@ -72,6 +75,8 @@ import org.springframework.util.Assert;
  */
 public final class OpaqueTokenAuthenticationProvider implements AuthenticationProvider {
 
+	private static final String AUTHORITY = FactorGrantedAuthority.BEARER_AUTHORITY;
+
 	private final Log logger = LogFactory.getLog(getClass());
 
 	private final OpaqueTokenIntrospector introspector;
@@ -100,7 +105,7 @@ public final class OpaqueTokenAuthenticationProvider implements AuthenticationPr
 	 * @throws AuthenticationException if authentication failed for some reason
 	 */
 	@Override
-	public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+	public @Nullable Authentication authenticate(Authentication authentication) throws AuthenticationException {
 		if (!(authentication instanceof BearerTokenAuthenticationToken bearer)) {
 			return null;
 		}
@@ -125,7 +130,8 @@ public final class OpaqueTokenAuthenticationProvider implements AuthenticationPr
 		}
 		catch (BadOpaqueTokenException failed) {
 			this.logger.debug("Failed to authenticate since token was invalid");
-			throw new InvalidBearerTokenException(failed.getMessage(), failed);
+			throw new InvalidBearerTokenException((failed.getMessage() != null) ? failed.getMessage() : "Invalid token",
+					failed);
 		}
 		catch (OAuth2IntrospectionException failed) {
 			throw new AuthenticationServiceException(failed.getMessage(), failed);
@@ -149,8 +155,9 @@ public final class OpaqueTokenAuthenticationProvider implements AuthenticationPr
 		Instant exp = authenticatedPrincipal.getAttribute(OAuth2TokenIntrospectionClaimNames.EXP);
 		OAuth2AccessToken accessToken = new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, introspectedToken,
 				iat, exp);
-		return new BearerTokenAuthentication(authenticatedPrincipal, accessToken,
-				authenticatedPrincipal.getAuthorities());
+		Collection<GrantedAuthority> authorities = new HashSet<>(authenticatedPrincipal.getAuthorities());
+		authorities.add(FactorGrantedAuthority.fromAuthority(AUTHORITY));
+		return new BearerTokenAuthentication(authenticatedPrincipal, accessToken, authorities);
 	}
 
 	/**

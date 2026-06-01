@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,11 @@
 
 /**
  * Core access-control related code, including security metadata related classes,
- * interception code, access control annotations, EL support and voter-based
- * implementations of the central
- * {@link org.springframework.security.access.AccessDecisionManager AccessDecisionManager}
- * interface.
+ * interception code, access control annotations, EL support, and implementations of the
+ * central {@link org.springframework.security.authorization.AuthorizationManager
+ * AuthorizationManager} interface.
  */
+@NullMarked
 package org.springframework.security.access;
+
+import org.jspecify.annotations.NullMarked;

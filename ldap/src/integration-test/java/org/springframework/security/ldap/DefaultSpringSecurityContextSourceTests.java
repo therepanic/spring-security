@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.ldap.AuthenticationException;
 import org.springframework.ldap.core.support.AbstractContextSource;
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -40,8 +39,6 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = UnboundIdContainerConfig.class)
-// FIXME: See https://github.com/spring-projects/spring-security/issues/17543
-@DirtiesContext
 public class DefaultSpringSecurityContextSourceTests {
 
 	@Autowired
@@ -71,6 +68,7 @@ public class DefaultSpringSecurityContextSourceTests {
 	}
 
 	@Test
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void poolingFlagIsSetWhenAuthenticationDnMatchesManagerUserDn() {
 		EnvExposingDefaultSpringSecurityContextSource ctxSrc = new EnvExposingDefaultSpringSecurityContextSource(
 				"ldap://blah:789/dc=springframework,dc=org");
@@ -82,6 +80,7 @@ public class DefaultSpringSecurityContextSourceTests {
 	}
 
 	@Test
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public void poolingFlagIsNotSetWhenAuthenticationDnIsNotManagerUserDn() {
 		EnvExposingDefaultSpringSecurityContextSource ctxSrc = new EnvExposingDefaultSpringSecurityContextSource(
 				"ldap://blah:789/dc=springframework,dc=org");
@@ -173,13 +172,13 @@ public class DefaultSpringSecurityContextSourceTests {
 			.isThrownBy(() -> new DefaultSpringSecurityContextSource(serverUrls, "dc=springframework,dc=org"));
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	static class EnvExposingDefaultSpringSecurityContextSource extends DefaultSpringSecurityContextSource {
 
 		EnvExposingDefaultSpringSecurityContextSource(String providerUrl) {
 			super(providerUrl);
 		}
 
-		@SuppressWarnings("unchecked")
 		Hashtable getAuthenticatedEnvForTest(String userDn, String password) {
 			return getAuthenticatedEnv(userDn, password);
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.util.Assert;
 
 /**
@@ -64,8 +65,7 @@ public final class DelegatingOAuth2AuthorizedClientProvider implements OAuth2Aut
 	}
 
 	@Override
-	@Nullable
-	public OAuth2AuthorizedClient authorize(OAuth2AuthorizationContext context) {
+	public @Nullable OAuth2AuthorizedClient authorize(OAuth2AuthorizationContext context) {
 		Assert.notNull(context, "context cannot be null");
 		for (OAuth2AuthorizedClientProvider authorizedClientProvider : this.authorizedClientProviders) {
 			OAuth2AuthorizedClient oauth2AuthorizedClient = authorizedClientProvider.authorize(context);

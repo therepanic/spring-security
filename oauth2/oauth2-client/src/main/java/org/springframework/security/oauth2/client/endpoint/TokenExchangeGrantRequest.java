@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.oauth2.client.endpoint;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
@@ -51,7 +53,7 @@ public class TokenExchangeGrantRequest extends AbstractOAuth2AuthorizationGrantR
 
 	private final OAuth2Token subjectToken;
 
-	private final OAuth2Token actorToken;
+	private final @Nullable OAuth2Token actorToken;
 
 	/**
 	 * Constructs a {@code TokenExchangeGrantRequest} using the provided parameters.
@@ -60,7 +62,7 @@ public class TokenExchangeGrantRequest extends AbstractOAuth2AuthorizationGrantR
 	 * @param actorToken the actor token
 	 */
 	public TokenExchangeGrantRequest(ClientRegistration clientRegistration, OAuth2Token subjectToken,
-			OAuth2Token actorToken) {
+			@Nullable OAuth2Token actorToken) {
 		super(AuthorizationGrantType.TOKEN_EXCHANGE, clientRegistration);
 		Assert.isTrue(AuthorizationGrantType.TOKEN_EXCHANGE.equals(clientRegistration.getAuthorizationGrantType()),
 				"clientRegistration.authorizationGrantType must be AuthorizationGrantType.TOKEN_EXCHANGE");
@@ -79,9 +81,9 @@ public class TokenExchangeGrantRequest extends AbstractOAuth2AuthorizationGrantR
 
 	/**
 	 * Returns the {@link OAuth2Token actor token}.
-	 * @return the {@link OAuth2Token actor token}
+	 * @return the {@link OAuth2Token actor token}, or {@code null} if not present
 	 */
-	public OAuth2Token getActorToken() {
+	public @Nullable OAuth2Token getActorToken() {
 		return this.actorToken;
 	}
 

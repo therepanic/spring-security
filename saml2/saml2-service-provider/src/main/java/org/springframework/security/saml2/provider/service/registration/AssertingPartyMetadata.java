@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.saml2.core.Saml2X509Credential;
 
@@ -119,7 +121,7 @@ public interface AssertingPartyMetadata extends Serializable {
 	 * @return the SingleLogoutService Location
 	 * @since 5.6
 	 */
-	String getSingleLogoutServiceLocation();
+	@Nullable String getSingleLogoutServiceLocation();
 
 	/**
 	 * Get the <a href=
@@ -132,7 +134,7 @@ public interface AssertingPartyMetadata extends Serializable {
 	 * @return the SingleLogoutService Response Location
 	 * @since 5.6
 	 */
-	String getSingleLogoutServiceResponseLocation();
+	@Nullable String getSingleLogoutServiceResponseLocation();
 
 	/**
 	 * Get the <a href=

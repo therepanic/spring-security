@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,17 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.messaging.rsocket.annotation.support.RSocketMessageHandler;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.authentication.password.CompromisedPasswordDecision;
@@ -46,6 +51,7 @@ import org.springframework.security.config.test.SpringTestContext;
 import org.springframework.security.config.test.SpringTestContextExtension;
 import org.springframework.security.config.users.ReactiveAuthenticationTestConfiguration;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.config.web.server.ServerHttpSecurity.AuthorizeExchangeSpec;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AnnotationTemplateExpressionDefaults;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -101,9 +107,19 @@ public class ServerHttpSecurityConfigurationTests {
 	}
 
 	@Test
-	public void loadConfigWhenReactiveUserDetailsServiceConfiguredThenServerHttpSecurityExists() {
+	public void loadConfigWhenReactiveUserAuthenticationServiceConfiguredThenServerHttpSecurityExists() {
 		this.spring
 			.register(ServerHttpSecurityConfiguration.class, ReactiveAuthenticationTestConfiguration.class,
+					WebFluxSecurityConfiguration.class)
+			.autowire();
+		ServerHttpSecurity serverHttpSecurity = this.spring.getContext().getBean(ServerHttpSecurity.class);
+		assertThat(serverHttpSecurity).isNotNull();
+	}
+
+	@Test
+	public void loadConfigWhenOnlyReactiveUserDetailsServiceConfiguredThenServerHttpSecurityExists() {
+		this.spring
+			.register(ServerHttpSecurityConfiguration.class, ReactiveUserDetailsServiceOnlyTestConfiguration.class,
 					WebFluxSecurityConfiguration.class)
 			.autowire();
 		ServerHttpSecurity serverHttpSecurity = this.spring.getContext().getBean(ServerHttpSecurity.class);
@@ -265,6 +281,47 @@ public class ServerHttpSecurityConfigurationTests {
 		assertThat(contexts.next().getName()).isEqualTo("spring.security.authorizations");
 		assertThat(contexts.next().getName()).isEqualTo("spring.security.http.secured.requests");
 		assertThat(contexts.next().getContextualName()).isEqualTo("security filterchain after");
+	}
+
+	@Test
+	void authorizeExchangeCustomizerBean() {
+		this.spring.register(AuthorizeExchangeCustomizerBeanConfig.class).autowire();
+		Customizer<AuthorizeExchangeSpec> authzCustomizer = this.spring.getContext().getBean("authz", Customizer.class);
+
+		ArgumentCaptor<AuthorizeExchangeSpec> arg0 = ArgumentCaptor.forClass(AuthorizeExchangeSpec.class);
+		verify(authzCustomizer).customize(arg0.capture());
+	}
+
+	@Test
+	void multiAuthorizeExchangeCustomizerBean() {
+		this.spring.register(MultiAuthorizeExchangeCustomizerBeanConfig.class).autowire();
+		Customizer<AuthorizeExchangeSpec> authzCustomizer = this.spring.getContext().getBean("authz", Customizer.class);
+
+		ArgumentCaptor<AuthorizeExchangeSpec> arg0 = ArgumentCaptor.forClass(AuthorizeExchangeSpec.class);
+		verify(authzCustomizer).customize(arg0.capture());
+	}
+
+	@Test
+	void serverHttpSecurityCustomizerBean() {
+		this.spring.register(ServerHttpSecurityCustomizerConfig.class).autowire();
+		Customizer<ServerHttpSecurity> httpSecurityCustomizer = this.spring.getContext()
+			.getBean("httpSecurityCustomizer", Customizer.class);
+
+		ArgumentCaptor<ServerHttpSecurity> arg0 = ArgumentCaptor.forClass(ServerHttpSecurity.class);
+		verify(httpSecurityCustomizer).customize(arg0.capture());
+	}
+
+	@Test
+	void multiServerHttpSecurityCustomizerBean() {
+		this.spring.register(MultiServerHttpSecurityCustomizerConfig.class).autowire();
+		Customizer<ServerHttpSecurity> httpSecurityCustomizer = this.spring.getContext()
+			.getBean("httpSecurityCustomizer", Customizer.class);
+		Customizer<ServerHttpSecurity> httpSecurityCustomizer0 = this.spring.getContext()
+			.getBean("httpSecurityCustomizer0", Customizer.class);
+		InOrder inOrder = Mockito.inOrder(httpSecurityCustomizer0, httpSecurityCustomizer);
+		ArgumentCaptor<ServerHttpSecurity> arg0 = ArgumentCaptor.forClass(ServerHttpSecurity.class);
+		inOrder.verify(httpSecurityCustomizer0).customize(arg0.capture());
+		inOrder.verify(httpSecurityCustomizer).customize(arg0.capture());
 	}
 
 	@Configuration
@@ -470,6 +527,76 @@ public class ServerHttpSecurityConfigurationTests {
 		@Bean
 		RSocketMessageHandler messageHandler() {
 			return new RSocketMessageHandler();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@EnableWebFlux
+	@EnableWebFluxSecurity
+	@Import(UserDetailsConfig.class)
+	static class AuthorizeExchangeCustomizerBeanConfig {
+
+		@Bean
+		SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
+			return http.build();
+		}
+
+		@Bean
+		static Customizer<AuthorizeExchangeSpec> authz() {
+			return mock(Customizer.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@Import(AuthorizeExchangeCustomizerBeanConfig.class)
+	static class MultiAuthorizeExchangeCustomizerBeanConfig {
+
+		@Bean
+		@Order(Ordered.HIGHEST_PRECEDENCE)
+		Customizer<AuthorizeExchangeSpec> authz0() {
+			return mock(Customizer.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@EnableWebFlux
+	@EnableWebFluxSecurity
+	@Import(UserDetailsConfig.class)
+	static class ServerHttpSecurityCustomizerConfig {
+
+		@Bean
+		SecurityWebFilterChain filterChain(ServerHttpSecurity http) {
+			return http.build();
+		}
+
+		@Bean
+		static Customizer<ServerHttpSecurity> httpSecurityCustomizer() {
+			return mock(Customizer.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@Import(ServerHttpSecurityCustomizerConfig.class)
+	static class MultiServerHttpSecurityCustomizerConfig {
+
+		@Bean
+		@Order(Ordered.HIGHEST_PRECEDENCE)
+		static Customizer<ServerHttpSecurity> httpSecurityCustomizer0() {
+			return mock(Customizer.class);
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ReactiveUserDetailsServiceOnlyTestConfiguration {
+
+		@Bean
+		static ReactiveUserDetailsService userDetailsService() {
+			return (username) -> Mono.just(PasswordEncodedUser.user());
 		}
 
 	}

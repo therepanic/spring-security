@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.security.saml2.provider.service.authentication;
 import java.io.Serial;
 import java.util.List;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -81,7 +83,7 @@ public class Saml2ResponseAssertion implements Saml2ResponseAssertionAccessor {
 
 		private final String responseValue;
 
-		private String nameId;
+		private @Nullable String nameId;
 
 		private List<String> sessionIndexes = List.of();
 
@@ -107,6 +109,7 @@ public class Saml2ResponseAssertion implements Saml2ResponseAssertionAccessor {
 		}
 
 		public Saml2ResponseAssertion build() {
+			Assert.notNull(this.nameId, "nameId cannot be null");
 			return new Saml2ResponseAssertion(this.responseValue, this.nameId, this.sessionIndexes, this.attributes);
 		}
 

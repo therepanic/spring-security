@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,14 +21,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.xml.namespace.QName;
 
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.opensaml.saml.common.assertion.AssertionValidationException;
 import org.opensaml.saml.common.assertion.ValidationContext;
 import org.opensaml.saml.common.assertion.ValidationResult;
@@ -44,8 +46,11 @@ import org.opensaml.saml.saml2.assertion.impl.ProxyRestrictionConditionValidator
 import org.opensaml.saml.saml2.core.Assertion;
 import org.opensaml.saml.saml2.core.Condition;
 import org.opensaml.saml.saml2.core.EncryptedAssertion;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.NameID;
 import org.opensaml.saml.saml2.core.OneTimeUse;
 import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.Subject;
 import org.opensaml.saml.saml2.core.SubjectConfirmation;
 import org.opensaml.saml.saml2.core.SubjectConfirmationData;
 import org.opensaml.saml.saml2.encryption.Decrypter;
@@ -53,13 +58,13 @@ import org.opensaml.xmlsec.signature.support.SignaturePrevalidator;
 import org.opensaml.xmlsec.signature.support.SignatureTrustEngine;
 
 import org.springframework.core.convert.converter.Converter;
-import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.saml2.core.Saml2Error;
 import org.springframework.security.saml2.core.Saml2ErrorCodes;
 import org.springframework.security.saml2.core.Saml2ResponseValidatorResult;
@@ -110,7 +115,10 @@ import org.springframework.util.StringUtils;
  * StatusResponse</a>
  * @see <a href="https://shibboleth.atlassian.net/wiki/spaces/OSAML/overview">OpenSAML</a>
  */
+@NullMarked
 public final class OpenSaml5AuthenticationProvider implements AuthenticationProvider {
+
+	private static final String AUTHORITY = FactorGrantedAuthority.SAML_RESPONSE_AUTHORITY;
 
 	private final BaseOpenSamlAuthenticationProvider delegate;
 
@@ -364,11 +372,12 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 			}
 			catch (Exception ex) {
 				String message = String.format("Invalid assertion [%s] for SAML response [%s]: %s", assertion.getID(),
-						((Response) assertion.getParent()).getID(), ex.getMessage());
+						((Response) Objects.requireNonNull(assertion.getParent())).getID(), ex.getMessage());
 				return Saml2ResponseValidatorResult.failure(new Saml2Error(Saml2ErrorCodes.INVALID_ASSERTION, message));
 			}
 			String message = String.format("Invalid assertion [%s] for SAML response [%s]: %s", assertion.getID(),
-					((Response) assertion.getParent()).getID(), context.getValidationFailureMessages());
+					((Response) Objects.requireNonNull(assertion.getParent())).getID(),
+					context.getValidationFailureMessages());
 			return Saml2ResponseValidatorResult.failure(new Saml2Error(Saml2ErrorCodes.INVALID_ASSERTION, message));
 		};
 	}
@@ -488,7 +497,6 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 	public static final class InResponseToValidator implements Converter<ResponseToken, Saml2ResponseValidatorResult> {
 
 		@Override
-		@NonNull
 		public Saml2ResponseValidatorResult convert(ResponseToken responseToken) {
 			AbstractSaml2AuthenticationRequest request = responseToken.getToken().getAuthenticationRequest();
 			Response response = responseToken.getResponse();
@@ -507,7 +515,6 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 	public static final class DestinationValidator implements Converter<ResponseToken, Saml2ResponseValidatorResult> {
 
 		@Override
-		@NonNull
 		public Saml2ResponseValidatorResult convert(ResponseToken responseToken) {
 			Response response = responseToken.getResponse();
 			Saml2AuthenticationToken token = responseToken.getToken();
@@ -533,15 +540,15 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 	public static final class IssuerValidator implements Converter<ResponseToken, Saml2ResponseValidatorResult> {
 
 		@Override
-		@NonNull
 		public Saml2ResponseValidatorResult convert(ResponseToken responseToken) {
 			Response response = responseToken.getResponse();
 			Saml2AuthenticationToken token = responseToken.getToken();
-			String issuer = response.getIssuer().getValue();
+			Issuer issuer = response.getIssuer();
+			Assert.notNull(issuer, "Response#Issuer cannot be null");
 			String assertingPartyEntityId = token.getRelyingPartyRegistration()
 				.getAssertingPartyMetadata()
 				.getEntityId();
-			if (!StringUtils.hasText(issuer) || !issuer.equals(assertingPartyEntityId)) {
+			if (!StringUtils.hasText(issuer.getValue()) || !assertingPartyEntityId.equals(issuer.getValue())) {
 				String message = String.format("Invalid issuer [%s] for SAML response [%s]", issuer, response.getID());
 				return Saml2ResponseValidatorResult.failure(new Saml2Error(Saml2ErrorCodes.INVALID_ISSUER, message));
 			}
@@ -639,11 +646,12 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 			}
 			catch (Exception ex) {
 				String message = String.format("Invalid assertion [%s] for SAML response [%s]: %s", assertion.getID(),
-						((Response) assertion.getParent()).getID(), ex.getMessage());
+						((Response) Objects.requireNonNull(assertion.getParent())).getID(), ex.getMessage());
 				return Saml2ResponseValidatorResult.failure(new Saml2Error(Saml2ErrorCodes.INVALID_ASSERTION, message));
 			}
 			String message = String.format("Invalid assertion [%s] for SAML response [%s]: %s", assertion.getID(),
-					((Response) assertion.getParent()).getID(), validationContext.getValidationFailureMessages());
+					((Response) Objects.requireNonNull(assertion.getParent())).getID(),
+					validationContext.getValidationFailureMessages());
 			return Saml2ResponseValidatorResult.failure(new Saml2Error(Saml2ErrorCodes.INVALID_ASSERTION, message));
 		}
 
@@ -701,7 +709,7 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 			return false;
 		}
 
-		private static String getAuthnRequestId(AbstractSaml2AuthenticationRequest serialized) {
+		private static @Nullable String getAuthnRequestId(@Nullable AbstractSaml2AuthenticationRequest serialized) {
 			return (serialized != null) ? serialized.getId() : null;
 		}
 
@@ -832,16 +840,13 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 				this.name = name;
 			}
 
-			@Nonnull
 			@Override
 			public QName getServicedCondition() {
 				return this.name;
 			}
 
-			@Nonnull
 			@Override
-			public ValidationResult validate(@Nonnull Condition condition, @Nonnull Assertion assertion,
-					@Nonnull ValidationContext context) {
+			public ValidationResult validate(Condition condition, Assertion assertion, ValidationContext context) {
 				return ValidationResult.VALID;
 			}
 
@@ -852,16 +857,15 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 			private ValidSignatureAssertionValidator(@Nullable Collection<ConditionValidator> newConditionValidators,
 					@Nullable Collection<SubjectConfirmationValidator> newConfirmationValidators,
 					@Nullable Collection<StatementValidator> newStatementValidators,
-					@Nullable org.opensaml.saml.saml2.assertion.AssertionValidator newAssertionValidator,
+					org.opensaml.saml.saml2.assertion.@Nullable AssertionValidator newAssertionValidator,
 					@Nullable SignatureTrustEngine newTrustEngine,
 					@Nullable SignaturePrevalidator newSignaturePrevalidator) {
 				super(newConditionValidators, newConfirmationValidators, newStatementValidators, newAssertionValidator,
 						newTrustEngine, newSignaturePrevalidator);
 			}
 
-			@Nonnull
 			@Override
-			protected ValidationResult validateSignature(@Nonnull Assertion token, @Nonnull ValidationContext context)
+			protected ValidationResult validateSignature(Assertion token, ValidationContext context)
 					throws AssertionValidationException {
 				return ValidationResult.VALID;
 			}
@@ -892,6 +896,7 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 			Response response = responseToken.response;
 			Saml2AuthenticationToken token = responseToken.token;
 			Assertion assertion = CollectionUtils.firstElement(response.getAssertions());
+			Assert.notNull(assertion, "samlResponse must have at least one assertion");
 			String username = this.principalNameConverter.convert(assertion);
 			String registrationId = responseToken.token.getRelyingPartyRegistration().getRegistrationId();
 			Saml2ResponseAssertionAccessor accessor = Saml2ResponseAssertion.withResponseValue(token.getSaml2Response())
@@ -900,7 +905,9 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 				.attributes(BaseOpenSamlAuthenticationProvider.getAssertionAttributes(assertion))
 				.build();
 			Saml2AuthenticatedPrincipal principal = new DefaultSaml2AuthenticatedPrincipal(username, accessor);
-			Collection<GrantedAuthority> authorities = this.grantedAuthoritiesConverter.convert(assertion);
+			Collection<GrantedAuthority> authorities = new HashSet<>(
+					this.grantedAuthoritiesConverter.convert(assertion));
+			authorities.add(FactorGrantedAuthority.fromAuthority(AUTHORITY));
 			return new Saml2AssertionAuthentication(principal, accessor, authorities, registrationId);
 		}
 
@@ -939,7 +946,11 @@ public final class OpenSaml5AuthenticationProvider implements AuthenticationProv
 				throw new Saml2AuthenticationException(
 						Saml2Error.subjectNotFound("Assertion [" + assertion.getID() + "] is missing a subject"));
 			}
-			return assertion.getSubject().getNameID().getValue();
+			Subject subject = assertion.getSubject();
+			Assert.notNull(subject, "Assertion#Subject cannot be null");
+			NameID nameId = subject.getNameID();
+			Assert.notNull(nameId, "Assertion#Subject#NameID cannot be null");
+			return Objects.requireNonNull(nameId.getValue());
 		}
 
 		private static Collection<GrantedAuthority> grantedAuthorities(Assertion assertion) {

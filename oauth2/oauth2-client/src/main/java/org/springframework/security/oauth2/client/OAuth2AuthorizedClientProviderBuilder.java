@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
@@ -157,11 +159,11 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 	 */
 	public final class ClientCredentialsGrantBuilder implements Builder {
 
-		private OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> accessTokenResponseClient;
+		private @Nullable OAuth2AccessTokenResponseClient<OAuth2ClientCredentialsGrantRequest> accessTokenResponseClient;
 
-		private Duration clockSkew;
+		private @Nullable Duration clockSkew;
 
-		private Clock clock;
+		private @Nullable Clock clock;
 
 		private ClientCredentialsGrantBuilder() {
 		}
@@ -249,13 +251,13 @@ public final class OAuth2AuthorizedClientProviderBuilder {
 	 */
 	public final class RefreshTokenGrantBuilder implements Builder {
 
-		private OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> accessTokenResponseClient;
+		private @Nullable OAuth2AccessTokenResponseClient<OAuth2RefreshTokenGrantRequest> accessTokenResponseClient;
 
-		private ApplicationEventPublisher eventPublisher;
+		private @Nullable ApplicationEventPublisher eventPublisher;
 
-		private Duration clockSkew;
+		private @Nullable Duration clockSkew;
 
-		private Clock clock;
+		private @Nullable Clock clock;
 
 		private RefreshTokenGrantBuilder() {
 		}

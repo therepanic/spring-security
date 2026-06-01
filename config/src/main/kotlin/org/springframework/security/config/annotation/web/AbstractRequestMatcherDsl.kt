@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ abstract class AbstractRequestMatcherDsl {
                                                   override val rule: String) : AuthorizationRule(rule)
 
     protected data class MatcherAuthorizationManagerRule(val matcher: RequestMatcher,
-                                                         override val rule: AuthorizationManager<RequestAuthorizationContext>) : AuthorizationManagerRule(rule)
+                                                         override val rule: AuthorizationManager<in RequestAuthorizationContext>) : AuthorizationManagerRule(rule)
 
     protected data class PatternAuthorizationRule(val pattern: String,
                                                   val patternType: PatternType,
@@ -51,11 +51,11 @@ abstract class AbstractRequestMatcherDsl {
                                                          val patternType: PatternType,
                                                          val servletPath: String? = null,
                                                          val httpMethod: HttpMethod? = null,
-                                                         override val rule: AuthorizationManager<RequestAuthorizationContext>) : AuthorizationManagerRule(rule)
+                                                         override val rule: AuthorizationManager<in RequestAuthorizationContext>) : AuthorizationManagerRule(rule)
 
     protected abstract class AuthorizationRule(open val rule: String)
 
-    protected abstract class AuthorizationManagerRule(open val rule: AuthorizationManager<RequestAuthorizationContext>)
+    protected abstract class AuthorizationManagerRule(open val rule: AuthorizationManager<in RequestAuthorizationContext>)
 
     protected enum class PatternType {
         ANT, MVC, PATH;

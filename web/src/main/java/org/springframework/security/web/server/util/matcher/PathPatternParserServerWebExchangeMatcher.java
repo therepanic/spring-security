@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpMethod;
@@ -44,19 +45,19 @@ public final class PathPatternParserServerWebExchangeMatcher implements ServerWe
 
 	private final PathPattern pattern;
 
-	private final HttpMethod method;
+	private final @Nullable HttpMethod method;
 
 	public PathPatternParserServerWebExchangeMatcher(PathPattern pattern) {
 		this(pattern, null);
 	}
 
-	public PathPatternParserServerWebExchangeMatcher(PathPattern pattern, HttpMethod method) {
+	public PathPatternParserServerWebExchangeMatcher(PathPattern pattern, @Nullable HttpMethod method) {
 		Assert.notNull(pattern, "pattern cannot be null");
 		this.pattern = pattern;
 		this.method = method;
 	}
 
-	public PathPatternParserServerWebExchangeMatcher(String pattern, HttpMethod method) {
+	public PathPatternParserServerWebExchangeMatcher(String pattern, @Nullable HttpMethod method) {
 		Assert.notNull(pattern, "pattern cannot be null");
 		this.pattern = parse(pattern);
 		this.method = method;
@@ -84,8 +85,9 @@ public final class PathPatternParserServerWebExchangeMatcher implements ServerWe
 				}
 			});
 		}
-		boolean match = this.pattern.matches(path);
-		if (!match) {
+
+		PathPattern.PathMatchInfo pathMatchInfo = this.pattern.matchAndExtract(path);
+		if (pathMatchInfo == null) {
 			return MatchResult.notMatch().doOnNext((result) -> {
 				if (logger.isDebugEnabled()) {
 					logger.debug("Request '" + request.getMethod() + " " + path + "' doesn't match '" + this.method
@@ -93,7 +95,7 @@ public final class PathPatternParserServerWebExchangeMatcher implements ServerWe
 				}
 			});
 		}
-		Map<String, String> pathVariables = this.pattern.matchAndExtract(path).getUriVariables();
+		Map<String, String> pathVariables = pathMatchInfo.getUriVariables();
 		Map<String, Object> variables = new HashMap<>(pathVariables);
 		if (logger.isDebugEnabled()) {
 			logger

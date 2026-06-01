@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2014 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import jakarta.servlet.Filter;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.security.config.BeanIds;
@@ -35,6 +36,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.util.Assert;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.context.support.WebApplicationContextUtils;
 
@@ -67,11 +69,16 @@ public abstract class WebTestUtils {
 	public static SecurityContextRepository getSecurityContextRepository(HttpServletRequest request) {
 		SecurityContextPersistenceFilter filter = findFilter(request, SecurityContextPersistenceFilter.class);
 		if (filter != null) {
-			return (SecurityContextRepository) ReflectionTestUtils.getField(filter, "repo");
+			SecurityContextRepository repo = (SecurityContextRepository) ReflectionTestUtils.getField(filter, "repo");
+			Assert.notNull(repo, "SecurityContextRepository must not be null");
+			return repo;
 		}
 		SecurityContextHolderFilter holderFilter = findFilter(request, SecurityContextHolderFilter.class);
 		if (holderFilter != null) {
-			return (SecurityContextRepository) ReflectionTestUtils.getField(holderFilter, "securityContextRepository");
+			SecurityContextRepository securityContextRepository = (SecurityContextRepository) ReflectionTestUtils
+				.getField(holderFilter, "securityContextRepository");
+			Assert.notNull(securityContextRepository, "SecurityContextRepository must not be null");
+			return securityContextRepository;
 		}
 		return DEFAULT_CONTEXT_REPO;
 	}
@@ -103,7 +110,7 @@ public abstract class WebTestUtils {
 	 * @return the {@link CsrfTokenRepository} for the specified
 	 * {@link HttpServletRequest}
 	 */
-	public static CsrfTokenRepository getCsrfTokenRepository(HttpServletRequest request) {
+	public static @Nullable CsrfTokenRepository getCsrfTokenRepository(HttpServletRequest request) {
 		CsrfFilter filter = findFilter(request, CsrfFilter.class);
 		if (filter == null) {
 			return DEFAULT_TOKEN_REPO;
@@ -120,7 +127,7 @@ public abstract class WebTestUtils {
 	 * @return the {@link CsrfTokenRequestHandler} for the specified
 	 * {@link HttpServletRequest}
 	 */
-	public static CsrfTokenRequestHandler getCsrfTokenRequestHandler(HttpServletRequest request) {
+	public static @Nullable CsrfTokenRequestHandler getCsrfTokenRequestHandler(HttpServletRequest request) {
 		CsrfFilter filter = findFilter(request, CsrfFilter.class);
 		if (filter == null) {
 			return DEFAULT_CSRF_HANDLER;
@@ -142,7 +149,7 @@ public abstract class WebTestUtils {
 	}
 
 	@SuppressWarnings("unchecked")
-	static <T extends Filter> T findFilter(HttpServletRequest request, Class<T> filterClass) {
+	static <T extends Filter> @Nullable T findFilter(HttpServletRequest request, Class<T> filterClass) {
 		ServletContext servletContext = request.getServletContext();
 		Filter springSecurityFilterChain = getSpringSecurityFilterChain(servletContext);
 		if (springSecurityFilterChain == null) {
@@ -160,7 +167,7 @@ public abstract class WebTestUtils {
 		return null;
 	}
 
-	private static Filter getSpringSecurityFilterChain(ServletContext servletContext) {
+	private static @Nullable Filter getSpringSecurityFilterChain(ServletContext servletContext) {
 		Filter result = (Filter) servletContext.getAttribute(BeanIds.SPRING_SECURITY_FILTER_CHAIN);
 		if (result != null) {
 			return result;

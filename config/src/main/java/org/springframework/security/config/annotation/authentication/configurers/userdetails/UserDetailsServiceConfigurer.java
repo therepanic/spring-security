@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ public class UserDetailsServiceConfigurer<B extends ProviderManagerBuilder<B>, C
 	}
 
 	@Override
-	public void configure(B builder) throws Exception {
+	public void configure(B builder) {
 		initUserDetailsService();
 		super.configure(builder);
 	}
@@ -52,7 +52,7 @@ public class UserDetailsServiceConfigurer<B extends ProviderManagerBuilder<B>, C
 	 * Allows subclasses to initialize the {@link UserDetailsService}. For example, it
 	 * might add users, initialize schema, etc.
 	 */
-	protected void initUserDetailsService() throws Exception {
+	protected void initUserDetailsService() {
 	}
 
 }

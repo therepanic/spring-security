@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.security.web.savedrequest;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Implements "saved request" logic, allowing a single request to be retrieved and
@@ -40,7 +41,7 @@ public interface RequestCache {
 	 * @param request the current request
 	 * @return the saved request which was previously cached, or null if there is none.
 	 */
-	SavedRequest getRequest(HttpServletRequest request, HttpServletResponse response);
+	@Nullable SavedRequest getRequest(HttpServletRequest request, HttpServletResponse response);
 
 	/**
 	 * Returns a wrapper around the saved request, if it matches the current request. The
@@ -50,7 +51,7 @@ public interface RequestCache {
 	 * @return the wrapped save request, if it matches the original, or null if there is
 	 * no cached request or it doesn't match.
 	 */
-	HttpServletRequest getMatchingRequest(HttpServletRequest request, HttpServletResponse response);
+	@Nullable HttpServletRequest getMatchingRequest(HttpServletRequest request, HttpServletResponse response);
 
 	/**
 	 * Removes the cached request.

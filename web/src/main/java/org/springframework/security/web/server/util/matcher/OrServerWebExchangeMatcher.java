@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,9 +40,9 @@ public class OrServerWebExchangeMatcher implements ServerWebExchangeMatcher {
 
 	private static final Log logger = LogFactory.getLog(OrServerWebExchangeMatcher.class);
 
-	private final List<ServerWebExchangeMatcher> matchers;
+	private final List<? extends ServerWebExchangeMatcher> matchers;
 
-	public OrServerWebExchangeMatcher(List<ServerWebExchangeMatcher> matchers) {
+	public OrServerWebExchangeMatcher(List<? extends ServerWebExchangeMatcher> matchers) {
 		Assert.notEmpty(matchers, "matchers cannot be empty");
 		this.matchers = matchers;
 	}

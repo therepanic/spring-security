@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@
 package org.springframework.security.saml2.provider.service.authentication;
 
 import java.io.Serial;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -52,7 +54,7 @@ public class Saml2AuthenticationException extends AuthenticationException {
 	 * @param error the {@link Saml2Error SAML 2.0 Error}
 	 */
 	public Saml2AuthenticationException(Saml2Error error) {
-		this(error, error.getDescription());
+		this(error, defaultMessage(error.getDescription(), error.getErrorCode()));
 	}
 
 	/**
@@ -61,7 +63,8 @@ public class Saml2AuthenticationException extends AuthenticationException {
 	 * @param cause the root cause
 	 */
 	public Saml2AuthenticationException(Saml2Error error, Throwable cause) {
-		this(error, (cause != null) ? cause.getMessage() : error.getDescription(), cause);
+		this(error, defaultMessage((cause != null) ? cause.getMessage() : error.getDescription(), error.getErrorCode()),
+				cause);
 	}
 
 	/**
@@ -69,8 +72,9 @@ public class Saml2AuthenticationException extends AuthenticationException {
 	 * @param error the {@link Saml2Error SAML 2.0 Error}
 	 * @param message the detail message
 	 */
-	public Saml2AuthenticationException(Saml2Error error, String message) {
-		this(error, message, null);
+	public Saml2AuthenticationException(Saml2Error error, @Nullable String message) {
+		super(defaultMessage(message, error.getErrorCode()));
+		this.error = error;
 	}
 
 	/**
@@ -79,10 +83,14 @@ public class Saml2AuthenticationException extends AuthenticationException {
 	 * @param message the detail message
 	 * @param cause the root cause
 	 */
-	public Saml2AuthenticationException(Saml2Error error, String message, Throwable cause) {
-		super(message, cause);
+	public Saml2AuthenticationException(Saml2Error error, @Nullable String message, Throwable cause) {
+		super(defaultMessage(message, error.getErrorCode()), cause);
 		Assert.notNull(error, "error cannot be null");
 		this.error = error;
+	}
+
+	private static String defaultMessage(@Nullable String message, String errorCode) {
+		return (message != null) ? message : errorCode;
 	}
 
 	/**

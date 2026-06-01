@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,9 +35,10 @@ final class ReactiveAuthenticationUtils {
 	private static final Authentication ANONYMOUS = new AnonymousAuthenticationToken("key", "anonymous",
 			AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
 
+	@SuppressWarnings("NullAway") // https://github.com/uber/NullAway/issues/1290
 	static Mono<Authentication> getAuthentication() {
 		return ReactiveSecurityContextHolder.getContext()
-			.map(SecurityContext::getAuthentication)
+			.mapNotNull(SecurityContext::getAuthentication)
 			.defaultIfEmpty(ANONYMOUS);
 	}
 

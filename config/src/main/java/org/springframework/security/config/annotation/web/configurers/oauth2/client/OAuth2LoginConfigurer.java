@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.security.config.annotation.web.configurers.oauth2.cl
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,10 +40,12 @@ import org.springframework.security.config.annotation.web.HttpSecurityBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractAuthenticationFilterConfigurer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.context.DelegatingApplicationListener;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper;
 import org.springframework.security.core.session.AbstractSessionEvent;
 import org.springframework.security.core.session.SessionDestroyedEvent;
@@ -83,7 +84,6 @@ import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.web.AuthenticationEntryPoint;
-import org.springframework.security.web.PortResolver;
 import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
@@ -180,6 +180,8 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 
 	private OAuth2AuthorizedClientRepository authorizedClientRepository;
 
+	private SecurityContextRepository securityContextRepository;
+
 	/**
 	 * Sets the repository of client registrations.
 	 * @param clientRegistrationRepository the repository of client registrations
@@ -230,6 +232,17 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 	public OAuth2LoginConfigurer<B> loginProcessingUrl(String loginProcessingUrl) {
 		Assert.hasText(loginProcessingUrl, "loginProcessingUrl cannot be empty");
 		this.loginProcessingUrl = loginProcessingUrl;
+		return this;
+	}
+
+	/**
+	 * Sets the {@link SecurityContextRepository} to use.
+	 * @param securityContextRepository the {@link SecurityContextRepository} to use
+	 * @return the {@link OAuth2LoginConfigurer} for further configuration
+	 */
+	@Override
+	public OAuth2LoginConfigurer<B> securityContextRepository(SecurityContextRepository securityContextRepository) {
+		this.securityContextRepository = securityContextRepository;
 		return this;
 	}
 
@@ -293,12 +306,15 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 	}
 
 	@Override
-	public void init(B http) throws Exception {
+	public void init(B http) {
 		OAuth2LoginAuthenticationFilter authenticationFilter = new OAuth2LoginAuthenticationFilter(
 				this.getClientRegistrationRepository(), this.getAuthorizedClientRepository(), this.loginProcessingUrl);
 		RequestMatcher processUri = getRequestMatcherBuilder().matcher(this.loginProcessingUrl);
 		authenticationFilter.setRequiresAuthenticationRequestMatcher(processUri);
 		authenticationFilter.setSecurityContextHolderStrategy(getSecurityContextHolderStrategy());
+		if (this.securityContextRepository != null) {
+			authenticationFilter.setSecurityContextRepository(this.securityContextRepository);
+		}
 		this.setAuthenticationFilter(authenticationFilter);
 		super.loginProcessingUrl(this.loginProcessingUrl);
 		if (this.loginPage != null) {
@@ -361,7 +377,7 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 	}
 
 	@Override
-	public void configure(B http) throws Exception {
+	public void configure(B http) {
 		OAuth2AuthorizationRequestRedirectFilter authorizationRequestFilter = new OAuth2AuthorizationRequestRedirectFilter(
 				getAuthorizationRequestResolver());
 		if (this.authorizationEndpointConfig.authorizationRequestRepository != null) {
@@ -538,16 +554,22 @@ public final class OAuth2LoginConfigurer<B extends HttpSecurityBuilder<B>>
 		RequestMatcher notXRequestedWith = new NegatedRequestMatcher(
 				new RequestHeaderRequestMatcher("X-Requested-With", "XMLHttpRequest"));
 		RequestMatcher formLoginNotEnabled = getFormLoginNotEnabledRequestMatcher(http);
-		LinkedHashMap<RequestMatcher, AuthenticationEntryPoint> entryPoints = new LinkedHashMap<>();
 		LoginUrlAuthenticationEntryPoint loginUrlEntryPoint = new LoginUrlAuthenticationEntryPoint(providerLoginPage);
-		PortResolver portResolver = getBeanOrNull(ResolvableType.forClass(PortResolver.class));
-		if (portResolver != null) {
-			loginUrlEntryPoint.setPortResolver(portResolver);
+		RequestMatcher loginUrlMatcher = new AndRequestMatcher(notXRequestedWith,
+				new NegatedRequestMatcher(defaultLoginPageMatcher), formLoginNotEnabled);
+		// @formatter:off
+		AuthenticationEntryPoint loginEntryPoint = DelegatingAuthenticationEntryPoint.builder()
+			.addEntryPointFor(loginUrlEntryPoint, loginUrlMatcher)
+			.defaultEntryPoint(getAuthenticationEntryPoint())
+			.build();
+		// @formatter:on
+		ExceptionHandlingConfigurer<B> exceptions = http.getConfigurer(ExceptionHandlingConfigurer.class);
+		if (exceptions != null) {
+			RequestMatcher requestMatcher = getAuthenticationEntryPointMatcher(http);
+			exceptions.defaultDeniedHandlerForMissingAuthority(
+					(ep) -> ep.addEntryPointFor(loginEntryPoint, requestMatcher),
+					FactorGrantedAuthority.AUTHORIZATION_CODE_AUTHORITY);
 		}
-		entryPoints.put(new AndRequestMatcher(notXRequestedWith, new NegatedRequestMatcher(defaultLoginPageMatcher),
-				formLoginNotEnabled), loginUrlEntryPoint);
-		DelegatingAuthenticationEntryPoint loginEntryPoint = new DelegatingAuthenticationEntryPoint(entryPoints);
-		loginEntryPoint.setDefaultEntryPoint(this.getAuthenticationEntryPoint());
 		return loginEntryPoint;
 	}
 

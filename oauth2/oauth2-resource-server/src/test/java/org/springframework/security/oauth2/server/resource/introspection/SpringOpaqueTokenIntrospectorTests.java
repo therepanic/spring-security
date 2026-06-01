@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -381,6 +381,32 @@ public class SpringOpaqueTokenIntrospectorTests {
 					.containsEntry(OAuth2TokenIntrospectionClaimNames.USERNAME, "client&1");
 			// @formatter:on
 		}
+	}
+
+	@Test
+	public void builderWhenPostProcessorSetThenApplied() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			server.setDispatcher(requiresAuth(CLIENT_ID, CLIENT_SECRET, ACTIVE_RESPONSE));
+			String introspectUri = server.url("/introspect").toString();
+			Converter<OAuth2TokenIntrospectionClaimAccessor, OAuth2AuthenticatedPrincipal> authenticationConverter = mock(
+					Converter.class);
+			OAuth2AuthenticatedPrincipal principal = mock(OAuth2AuthenticatedPrincipal.class);
+			given(authenticationConverter.convert(any())).willReturn(principal);
+			OpaqueTokenIntrospector introspector = SpringOpaqueTokenIntrospector.withIntrospectionUri(introspectUri)
+				.clientId(CLIENT_ID)
+				.clientSecret(CLIENT_SECRET)
+				.postProcessor((i) -> i.setAuthenticationConverter(authenticationConverter))
+				.build();
+			OAuth2AuthenticatedPrincipal result = introspector.introspect("token");
+			assertThat(result).isSameAs(principal);
+		}
+	}
+
+	// gh-19201
+	@Test
+	public void builderWhenMissingClientCredentialsThenThrowsException() {
+		assertThatExceptionOfType(IllegalArgumentException.class)
+			.isThrownBy(() -> SpringOpaqueTokenIntrospector.withIntrospectionUri(INTROSPECTION_URL).build());
 	}
 
 	private static ResponseEntity<Map<String, Object>> response(String content) {

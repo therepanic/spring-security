@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,21 +16,38 @@
 
 package org.springframework.security.authorization.method;
 
+import java.util.function.Supplier;
+
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.EvaluationException;
 import org.springframework.expression.Expression;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.authorization.AuthorizationResult;
 import org.springframework.security.authorization.ExpressionAuthorizationDecision;
+import org.springframework.security.core.Authentication;
+import org.springframework.util.Assert;
 
 final class ExpressionUtils {
 
 	private ExpressionUtils() {
 	}
 
-	static AuthorizationResult evaluate(Expression expr, EvaluationContext ctx) {
+	static @Nullable AuthorizationResult evaluate(Expression expr, EvaluationContext ctx) {
+		return evaluate(expr, ctx, () -> null, null);
+	}
+
+	static <T> @Nullable AuthorizationResult evaluate(Expression expr, EvaluationContext ctx,
+			Supplier<? extends @Nullable Authentication> authentication, @Nullable T context) {
 		try {
 			Object result = expr.getValue(ctx);
+			if (result instanceof AuthorizationManager<?> manager) {
+				Assert.notNull(authentication, "authentication supplier cannot be null");
+				Assert.notNull(context, "context cannot be null");
+				return ((AuthorizationManager<T>) manager).authorize(authentication, context);
+			}
 			if (result instanceof AuthorizationResult decision) {
 				return decision;
 			}
@@ -53,7 +70,7 @@ final class ExpressionUtils {
 		}
 	}
 
-	static AuthorizationDeniedException findAuthorizationException(EvaluationException ex) {
+	static @Nullable AuthorizationDeniedException findAuthorizationException(EvaluationException ex) {
 		Throwable cause = ex.getCause();
 		while (cause != null) {
 			if (cause instanceof AuthorizationDeniedException denied) {

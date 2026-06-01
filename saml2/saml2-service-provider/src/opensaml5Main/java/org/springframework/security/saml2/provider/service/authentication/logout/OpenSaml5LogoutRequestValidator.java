@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package org.springframework.security.saml2.provider.service.authentication.logout;
 
+import org.jspecify.annotations.NullMarked;
+
 /**
  * An OpenSAML 5.x compatible implementation of {@link Saml2LogoutResponseValidator}
  *
  * @author Josh Cummings
  * @since 5.6
  */
+@NullMarked
 public final class OpenSaml5LogoutRequestValidator implements Saml2LogoutRequestValidator {
 
 	@SuppressWarnings("deprecation")

@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.authentication.jaas.JaasAuthenticationToken;
@@ -118,7 +119,7 @@ public class JaasApiIntegrationFilter extends GenericFilterBean {
 	 * @return the Subject to run as or <code>null</code> if no <code>Subject</code> is
 	 * available.
 	 */
-	protected Subject obtainSubject(ServletRequest request) {
+	protected @Nullable Subject obtainSubject(ServletRequest request) {
 		Authentication authentication = this.securityContextHolderStrategy.getContext().getAuthentication();
 		this.logger.debug(LogMessage.format("Attempting to obtainSubject using authentication : %s", authentication));
 		if (authentication == null) {

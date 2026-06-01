@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.web;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.security.web.access.WebInvocationPrivilegeEvaluator;
 
@@ -36,6 +38,22 @@ public final class WebAttributes {
 	public static final String ACCESS_DENIED_403 = "SPRING_SECURITY_403_EXCEPTION";
 
 	/**
+	 * Set as a request attribute to provide an
+	 * {@link org.springframework.context.ApplicationContext} for use by JSP authorize
+	 * tags when resolving security beans.
+	 * <p>
+	 * When set, this attribute is preferred over the root web application context. The
+	 * value must be of type {@link org.springframework.context.ApplicationContext}.
+	 *
+	 * <p>
+	 * Used in {@code org.springframework.security.taglibs.authz.AbstractAuthorizeTag}.
+	 *
+	 * @since 7.1
+	 */
+	public static final String APPLICATION_CONTEXT_ATTRIBUTE = WebAttributes.class.getName()
+			+ ".APPLICATION_CONTEXT_ATTRIBUTE";
+
+	/**
 	 * Used to cache an authentication-failure exception in the session.
 	 *
 	 * @see org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler
@@ -51,6 +69,18 @@ public final class WebAttributes {
 	 */
 	public static final String WEB_INVOCATION_PRIVILEGE_EVALUATOR_ATTRIBUTE = WebAttributes.class.getName()
 			+ ".WEB_INVOCATION_PRIVILEGE_EVALUATOR_ATTRIBUTE";
+
+	/**
+	 * Used to set a {@code Collection} of
+	 * {@link org.springframework.security.authorization.RequiredFactorError} instances
+	 * into the {@link HttpServletRequest}.
+	 * <p>
+	 * Represents what authorities are missing to be authorized for the current request
+	 *
+	 * @since 7.0
+	 * @see org.springframework.security.web.access.DelegatingMissingAuthorityAccessDeniedHandler
+	 */
+	public static final String REQUIRED_FACTOR_ERRORS = WebAttributes.class + ".REQUIRED_FACTOR_ERRORS	";
 
 	private WebAttributes() {
 	}

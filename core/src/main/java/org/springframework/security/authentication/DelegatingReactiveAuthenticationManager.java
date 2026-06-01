@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,6 @@ public class DelegatingReactiveAuthenticationManager implements ReactiveAuthenti
 		Function<ReactiveAuthenticationManager, Mono<Authentication>> logging = (m) -> m.authenticate(authentication)
 			.doOnError(AuthenticationException.class, (ex) -> ex.setAuthenticationRequest(authentication))
 			.doOnError(this.logger::debug);
-
 		return ((this.continueOnError) ? result.concatMapDelayError(logging) : result.concatMap(logging)).next();
 	}
 

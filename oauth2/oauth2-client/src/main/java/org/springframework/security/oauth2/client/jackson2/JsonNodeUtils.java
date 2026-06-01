@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,18 @@ import java.util.Set;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Utility class for {@code JsonNode}.
  *
  * @author Joe Grandja
  * @since 5.3
+ * @deprecated as of 7.0 in favor of
+ * {@code org.springframework.security.oauth2.client.jackson.JsonNodeUtils} based on
+ * Jackson 3
  */
+@Deprecated(forRemoval = true)
 abstract class JsonNodeUtils {
 
 	static final TypeReference<Set<String>> STRING_SET = new TypeReference<>() {
@@ -37,7 +42,7 @@ abstract class JsonNodeUtils {
 	static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP = new TypeReference<>() {
 	};
 
-	static String findStringValue(JsonNode jsonNode, String fieldName) {
+	static @Nullable String findStringValue(@Nullable JsonNode jsonNode, String fieldName) {
 		if (jsonNode == null) {
 			return null;
 		}
@@ -45,7 +50,7 @@ abstract class JsonNodeUtils {
 		return (value != null && value.isTextual()) ? value.asText() : null;
 	}
 
-	static <T> T findValue(JsonNode jsonNode, String fieldName, TypeReference<T> valueTypeReference,
+	static <T> @Nullable T findValue(@Nullable JsonNode jsonNode, String fieldName, TypeReference<T> valueTypeReference,
 			ObjectMapper mapper) {
 		if (jsonNode == null) {
 			return null;
@@ -54,7 +59,7 @@ abstract class JsonNodeUtils {
 		return (value != null && value.isContainerNode()) ? mapper.convertValue(value, valueTypeReference) : null;
 	}
 
-	static JsonNode findObjectNode(JsonNode jsonNode, String fieldName) {
+	static @Nullable JsonNode findObjectNode(@Nullable JsonNode jsonNode, String fieldName) {
 		if (jsonNode == null) {
 			return null;
 		}

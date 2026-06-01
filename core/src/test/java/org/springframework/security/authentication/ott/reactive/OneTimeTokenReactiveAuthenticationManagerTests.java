@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,6 +59,7 @@ public class OneTimeTokenReactiveAuthenticationManagerTests {
 	private static final String TOKEN = "token";
 
 	@Test
+	@SuppressWarnings("removal")
 	public void constructorWhenOneTimeTokenServiceNullThenIllegalArgumentException() {
 		ReactiveUserDetailsService userDetailsService = mock(ReactiveUserDetailsService.class);
 		// @formatter:off
@@ -68,6 +69,7 @@ public class OneTimeTokenReactiveAuthenticationManagerTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	public void constructorWhenUserDetailsServiceNullThenIllegalArgumentException() {
 		ReactiveOneTimeTokenService oneTimeTokenService = mock(ReactiveOneTimeTokenService.class);
 		// @formatter:off
@@ -77,6 +79,7 @@ public class OneTimeTokenReactiveAuthenticationManagerTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	void authenticateWhenOneTimeTokenAuthenticationTokenIsPresentThenSuccess() {
 		ReactiveOneTimeTokenService oneTimeTokenService = mock(ReactiveOneTimeTokenService.class);
 		given(oneTimeTokenService.consume(ArgumentMatchers.any(OneTimeTokenAuthenticationToken.class)))
@@ -88,13 +91,12 @@ public class OneTimeTokenReactiveAuthenticationManagerTests {
 		this.authenticationManager = new OneTimeTokenReactiveAuthenticationManager(oneTimeTokenService,
 				userDetailsService);
 
-		Authentication auth = this.authenticationManager
+		Authentication token = this.authenticationManager
 			.authenticate(OneTimeTokenAuthenticationToken.unauthenticated(TOKEN))
 			.block();
 
-		OneTimeTokenAuthenticationToken token = (OneTimeTokenAuthenticationToken) auth;
 		UserDetails user = (UserDetails) token.getPrincipal();
-		Collection<GrantedAuthority> authorities = token.getAuthorities();
+		Collection<? extends GrantedAuthority> authorities = token.getAuthorities();
 
 		assertThat(user).isNotNull();
 		assertThat(user.getUsername()).isEqualTo(USERNAME);
@@ -104,6 +106,7 @@ public class OneTimeTokenReactiveAuthenticationManagerTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	void authenticateWhenInvalidOneTimeTokenAuthenticationTokenIsPresentThenFail() {
 		ReactiveOneTimeTokenService oneTimeTokenService = mock(ReactiveOneTimeTokenService.class);
 		given(oneTimeTokenService.consume(ArgumentMatchers.any(OneTimeTokenAuthenticationToken.class)))
@@ -121,6 +124,7 @@ public class OneTimeTokenReactiveAuthenticationManagerTests {
 	}
 
 	@Test
+	@SuppressWarnings("removal")
 	void authenticateWhenIncorrectTypeOfAuthenticationIsPresentThenFail() {
 		ReactiveOneTimeTokenService oneTimeTokenService = mock(ReactiveOneTimeTokenService.class);
 		given(oneTimeTokenService.consume(ArgumentMatchers.any(OneTimeTokenAuthenticationToken.class)))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.security.web.server.header;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.security.web.server.header.StaticServerHttpHeadersWriter.Builder;
@@ -35,11 +36,11 @@ public final class ContentSecurityPolicyServerHttpHeadersWriter implements Serve
 
 	public static final String CONTENT_SECURITY_POLICY_REPORT_ONLY = "Content-Security-Policy-Report-Only";
 
-	private String policyDirectives;
+	private @Nullable String policyDirectives;
 
 	private boolean reportOnly;
 
-	private ServerHttpHeadersWriter delegate;
+	private @Nullable ServerHttpHeadersWriter delegate;
 
 	@Override
 	public Mono<Void> writeHttpHeaders(ServerWebExchange exchange) {
@@ -67,7 +68,7 @@ public final class ContentSecurityPolicyServerHttpHeadersWriter implements Serve
 		this.delegate = createDelegate();
 	}
 
-	private ServerHttpHeadersWriter createDelegate() {
+	private @Nullable ServerHttpHeadersWriter createDelegate() {
 		if (this.policyDirectives == null) {
 			return null;
 		}

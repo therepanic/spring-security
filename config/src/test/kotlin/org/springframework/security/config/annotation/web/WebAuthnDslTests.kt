@@ -1,5 +1,8 @@
+@file:Suppress("DEPRECATION", "PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
+
 /*
- * Copyright 2002-2025 the original author or authors.
+
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -125,6 +128,8 @@ class WebAuthnDslTests {
             http{
                 formLogin { }
                 webAuthn {
+                    rpId = "spring.io"
+                    rpName = "spring"
                     disableDefaultRegistrationPage = true
                 }
             }
@@ -144,7 +149,10 @@ class WebAuthnDslTests {
         open fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
             http{
                 formLogin { }
-                webAuthn { }
+                webAuthn {
+                    rpId = "spring.io"
+                    rpName = "spring"
+                }
             }
             return http.build()
         }

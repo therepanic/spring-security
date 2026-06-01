@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.security.web.server.authentication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
@@ -28,12 +29,18 @@ import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.ReactiveAuthenticationManagerResolver;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.test.web.reactive.server.WebTestClientBuilder;
+import org.springframework.security.web.authentication.DefaultEqualsGrantedAuthority;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.test.web.reactive.server.EntityExchangeResult;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -169,6 +176,35 @@ public class AuthenticationWebFilterTests {
 		assertThat(result.getResponseCookies()).isEmpty();
 	}
 
+	/**
+	 * This is critical to avoid adding duplicate GrantedAuthority instances with the
+	 * same' authority when the issuedAt is too old and a new instance is requested.
+	 * @throws Exception
+	 */
+	@Test
+	public void filterWhenDefaultEqualsAuthorityThenNoDuplicates() {
+		TestingAuthenticationToken existingAuthn = new TestingAuthenticationToken("username", "password",
+				new DefaultEqualsGrantedAuthority());
+		given(this.authenticationManager.authenticate(any())).willReturn(
+				Mono.just(new TestingAuthenticationToken("user", "password", new DefaultEqualsGrantedAuthority())));
+		given(this.securityContextRepository.save(any(), any())).willReturn(Mono.empty());
+		this.filter = new AuthenticationWebFilter(this.authenticationManager);
+		this.filter.setSecurityContextRepository(this.securityContextRepository);
+		WebTestClient client = WebTestClientBuilder.bindToWebFilters(new RunAsWebFilter(existingAuthn), this.filter)
+			.build();
+		client.get()
+			.uri("/")
+			.headers((headers) -> headers.setBasicAuth("test", "this"))
+			.exchange()
+			.expectStatus()
+			.isOk();
+		ArgumentCaptor<SecurityContext> context = ArgumentCaptor.forClass(SecurityContext.class);
+		verify(this.securityContextRepository).save(any(), context.capture());
+		Authentication authentication = context.getValue().getAuthentication();
+		assertThat(authentication.getAuthorities()).extracting(GrantedAuthority::getAuthority)
+			.containsExactly(DefaultEqualsGrantedAuthority.AUTHORITY);
+	}
+
 	@Test
 	public void filterWhenAuthenticationManagerResolverDefaultsAndAuthenticationFailThenUnauthorized() {
 		given(this.authenticationManager.authenticate(any()))
@@ -284,6 +320,26 @@ public class AuthenticationWebFilterTests {
 	@Test
 	public void setRequiresAuthenticationMatcherWhenNullThenException() {
 		assertThatIllegalArgumentException().isThrownBy(() -> this.filter.setRequiresAuthenticationMatcher(null));
+	}
+
+	/**
+	 * @author Rob Winch
+	 * @since 7.0
+	 */
+	private static final class RunAsWebFilter implements WebFilter {
+
+		private final Authentication authentication;
+
+		private RunAsWebFilter(Authentication authentication) {
+			this.authentication = authentication;
+		}
+
+		@Override
+		public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+			return chain.filter(exchange)
+				.contextWrite(ReactiveSecurityContextHolder.withAuthentication(this.authentication));
+		}
+
 	}
 
 }

@@ -1,5 +1,7 @@
+@file:Suppress("DEPRECATION", "PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
+
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -367,7 +369,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomFilterConfig::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filters: List<Filter> = filterChain.getFilters("/")
+        val filters: List<Filter>? = filterChain.getFilters("/")
 
         assertThat(filters).anyMatch { it is CustomFilter }
     }
@@ -390,7 +392,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomFilterConfigReified::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filters: List<Filter> = filterChain.getFilters("/")
+        val filters: List<Filter>? = filterChain.getFilters("/")
 
         assertThat(filters).anyMatch { it is CustomFilter }
     }
@@ -413,7 +415,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomFilterAfterConfig::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filters: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filters: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filters).containsSubsequence(
             UsernamePasswordAuthenticationFilter::class.java,
@@ -440,7 +442,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomFilterAfterConfigReified::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filterClasses).containsSubsequence(
             UsernamePasswordAuthenticationFilter::class.java,
@@ -467,7 +469,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomFilterBeforeConfig::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filters: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filters: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filters).containsSubsequence(
             CustomFilter::class.java,
@@ -494,7 +496,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomFilterBeforeConfigReified::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filterClasses).containsSubsequence(
             CustomFilter::class.java,
@@ -523,7 +525,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomSecurityConfigurerConfig::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filterClasses).contains(
             CustomFilter::class.java
@@ -535,7 +537,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomSecurityConfigurerConfig::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filterClasses).contains(
             CustomFilter::class.java
@@ -588,7 +590,7 @@ class HttpSecurityDslTests {
         this.spring.register(CustomDslUsingWithConfig::class.java).autowire()
 
         val filterChain = spring.context.getBean(FilterChainProxy::class.java)
-        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/").map { it.javaClass }
+        val filterClasses: List<Class<out Filter>> = filterChain.getFilters("/")!!.map { it.javaClass }
 
         assertThat(filterClasses).contains(
             UsernamePasswordAuthenticationFilter::class.java
@@ -623,5 +625,38 @@ class HttpSecurityDslTests {
 
     }
 
+    @Test
+    fun `HTTP security when Dsl Bean`() {
+        this.spring.register(DslBeanConfig::class.java).autowire()
+
+        this.mockMvc.get("/")
+            .andExpect {
+                header {
+                    string("Content-Security-Policy", "object-src 'none'")
+                }
+            }
+    }
+
+    @Configuration
+    @EnableWebSecurity
+    @EnableWebMvc
+    open class DslBeanConfig {
+        @Bean
+        open fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+            http {
+                httpBasic { }
+            }
+            return http.build()
+        }
+
+        @Bean
+        open fun headersDsl(): HeadersDsl.() -> Unit {
+            return {
+                contentSecurityPolicy {
+                    policyDirectives = "object-src 'none'"
+                }
+            }
+        }
+    }
 
 }

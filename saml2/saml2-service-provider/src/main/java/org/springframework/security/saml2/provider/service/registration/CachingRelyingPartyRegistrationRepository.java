@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.cache.Cache;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
@@ -55,12 +57,12 @@ public final class CachingRelyingPartyRegistrationRepository implements Iterable
 	 * {@inheritDoc}
 	 */
 	@Override
-	public RelyingPartyRegistration findByRegistrationId(String registrationId) {
+	public @Nullable RelyingPartyRegistration findByRegistrationId(String registrationId) {
 		return registrations().findByRegistrationId(registrationId);
 	}
 
 	@Override
-	public RelyingPartyRegistration findUniqueByAssertingPartyEntityId(String entityId) {
+	public @Nullable RelyingPartyRegistration findUniqueByAssertingPartyEntityId(String entityId) {
 		return registrations().findUniqueByAssertingPartyEntityId(entityId);
 	}
 
@@ -75,7 +77,10 @@ public final class CachingRelyingPartyRegistrationRepository implements Iterable
 	}
 
 	private IterableRelyingPartyRegistrationRepository registrations() {
-		return this.cache.get("registrations", this.registrationLoader);
+		IterableRelyingPartyRegistrationRepository registrations = this.cache.get("registrations",
+				this.registrationLoader);
+		Assert.notNull(registrations, "cache loader failed to return a repostory instance");
+		return registrations;
 	}
 
 	/**

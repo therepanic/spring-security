@@ -18,9 +18,9 @@ package org.springframework.security.web.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpMethod;
-import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -53,7 +53,7 @@ public class UsernamePasswordAuthenticationFilter extends AbstractAuthentication
 
 	public static final String SPRING_SECURITY_FORM_PASSWORD_KEY = "password";
 
-	private static final RequestMatcher DEFAULT_ANT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults()
+	private static final RequestMatcher DEFAULT_PATH_REQUEST_MATCHER = PathPatternRequestMatcher.withDefaults()
 		.matcher(HttpMethod.POST, "/login");
 
 	private String usernameParameter = SPRING_SECURITY_FORM_USERNAME_KEY;
@@ -63,11 +63,11 @@ public class UsernamePasswordAuthenticationFilter extends AbstractAuthentication
 	private boolean postOnly = true;
 
 	public UsernamePasswordAuthenticationFilter() {
-		super(DEFAULT_ANT_PATH_REQUEST_MATCHER);
+		super(DEFAULT_PATH_REQUEST_MATCHER);
 	}
 
 	public UsernamePasswordAuthenticationFilter(AuthenticationManager authenticationManager) {
-		super(DEFAULT_ANT_PATH_REQUEST_MATCHER, authenticationManager);
+		super(DEFAULT_PATH_REQUEST_MATCHER, authenticationManager);
 	}
 
 	@Override
@@ -100,8 +100,7 @@ public class UsernamePasswordAuthenticationFilter extends AbstractAuthentication
 	 * @return the password that will be presented in the <code>Authentication</code>
 	 * request token to the <code>AuthenticationManager</code>
 	 */
-	@Nullable
-	protected String obtainPassword(HttpServletRequest request) {
+	protected @Nullable String obtainPassword(HttpServletRequest request) {
 		return request.getParameter(this.passwordParameter);
 	}
 
@@ -112,8 +111,7 @@ public class UsernamePasswordAuthenticationFilter extends AbstractAuthentication
 	 * @return the username that will be presented in the <code>Authentication</code>
 	 * request token to the <code>AuthenticationManager</code>
 	 */
-	@Nullable
-	protected String obtainUsername(HttpServletRequest request) {
+	protected @Nullable String obtainUsername(HttpServletRequest request) {
 		return request.getParameter(this.usernameParameter);
 	}
 

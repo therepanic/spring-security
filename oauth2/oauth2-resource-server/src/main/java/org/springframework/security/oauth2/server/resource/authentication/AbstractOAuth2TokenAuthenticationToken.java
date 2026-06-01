@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,11 @@ package org.springframework.security.oauth2.server.resource.authentication;
 import java.util.Collection;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.SpringSecurityCoreVersion;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.core.OAuth2Token;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -48,7 +49,7 @@ import org.springframework.util.Assert;
 public abstract class AbstractOAuth2TokenAuthenticationToken<T extends OAuth2Token>
 		extends AbstractAuthenticationToken {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
 	private Object principal;
 
@@ -60,21 +61,20 @@ public abstract class AbstractOAuth2TokenAuthenticationToken<T extends OAuth2Tok
 	 * Sub-class constructor.
 	 */
 	protected AbstractOAuth2TokenAuthenticationToken(T token) {
-
 		this(token, null);
 	}
 
 	/**
 	 * Sub-class constructor.
-	 * @param authorities the authorities assigned to the Access Token
+	 * @param authorities the authorities assigned to the Access Token, or {@code null}
 	 */
-	protected AbstractOAuth2TokenAuthenticationToken(T token, Collection<? extends GrantedAuthority> authorities) {
-
+	protected AbstractOAuth2TokenAuthenticationToken(T token,
+			@Nullable Collection<? extends GrantedAuthority> authorities) {
 		this(token, token, token, authorities);
 	}
 
 	protected AbstractOAuth2TokenAuthenticationToken(T token, Object principal, Object credentials,
-			Collection<? extends GrantedAuthority> authorities) {
+			@Nullable Collection<? extends GrantedAuthority> authorities) {
 
 		super(authorities);
 		Assert.notNull(token, "token cannot be null");
@@ -82,6 +82,15 @@ public abstract class AbstractOAuth2TokenAuthenticationToken<T extends OAuth2Tok
 		this.principal = principal;
 		this.credentials = credentials;
 		this.token = token;
+	}
+
+	protected AbstractOAuth2TokenAuthenticationToken(AbstractOAuth2TokenAuthenticationBuilder<T, ?> builder) {
+		super(builder);
+		Assert.notNull(builder.credentials, "token cannot be null");
+		Assert.notNull(builder.principal, "principal cannot be null");
+		this.principal = builder.principal;
+		this.credentials = builder.credentials;
+		this.token = builder.token;
 	}
 
 	@Override
@@ -106,5 +115,54 @@ public abstract class AbstractOAuth2TokenAuthenticationToken<T extends OAuth2Tok
 	 * @return a {@code Map} of the attributes in the access token.
 	 */
 	public abstract Map<String, Object> getTokenAttributes();
+
+	/**
+	 * A builder for {@link AbstractOAuth2TokenAuthenticationToken} implementations
+	 *
+	 * @param <B>
+	 * @since 7.0
+	 */
+	public abstract static class AbstractOAuth2TokenAuthenticationBuilder<T extends OAuth2Token, B extends AbstractOAuth2TokenAuthenticationBuilder<T, B>>
+			extends AbstractAuthenticationBuilder<B> {
+
+		private Object principal;
+
+		private Object credentials;
+
+		private T token;
+
+		protected AbstractOAuth2TokenAuthenticationBuilder(AbstractOAuth2TokenAuthenticationToken<T> token) {
+			super(token);
+			this.principal = token.getPrincipal();
+			this.credentials = token.getCredentials();
+			this.token = token.getToken();
+		}
+
+		@Override
+		public B principal(@Nullable Object principal) {
+			Assert.notNull(principal, "principal cannot be null");
+			this.principal = principal;
+			return (B) this;
+		}
+
+		@Override
+		public B credentials(@Nullable Object credentials) {
+			Assert.notNull(credentials, "credentials cannot be null");
+			this.credentials = credentials;
+			return (B) this;
+		}
+
+		/**
+		 * The OAuth 2.0 Token to use
+		 * @param token the token to use
+		 * @return the {@link Builder} for further configurations
+		 */
+		public B token(T token) {
+			Assert.notNull(token, "token cannot be null");
+			this.token = token;
+			return (B) this;
+		}
+
+	}
 
 }

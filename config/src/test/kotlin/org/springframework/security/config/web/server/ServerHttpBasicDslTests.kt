@@ -1,5 +1,7 @@
+@file:Suppress("DEPRECATION", "PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
+
 /*
- * Copyright 2002-2021 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +153,7 @@ class ServerHttpBasicDslTests {
     }
 
     class NoopReactiveAuthenticationManager: ReactiveAuthenticationManager {
-        override fun authenticate(authentication: Authentication?): Mono<Authentication> {
+        override fun authenticate(authentication: Authentication): Mono<Authentication> {
             return Mono.empty()
         }
     }
@@ -270,8 +272,8 @@ class ServerHttpBasicDslTests {
 
     open class MockServerAuthenticationFailureHandler: ServerAuthenticationFailureHandler {
         override fun onAuthenticationFailure(
-            webFilterExchange: WebFilterExchange?,
-            exception: AuthenticationException?
+            webFilterExchange: WebFilterExchange,
+            exception: AuthenticationException
         ): Mono<Void> {
             return Mono.empty()
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.saml2.provider.service.metadata;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Resolves Relying Party SAML 2.0 Metadata given details from the
@@ -33,6 +34,6 @@ public interface Saml2MetadataResponseResolver {
 	 * @param request the HTTP request
 	 * @return a {@link Saml2MetadataResponse} instance
 	 */
-	Saml2MetadataResponse resolve(HttpServletRequest request);
+	@Nullable Saml2MetadataResponse resolve(HttpServletRequest request);
 
 }

@@ -20,9 +20,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ldap.core.DirContextAdapter;
 import org.springframework.ldap.core.DirContextOperations;
-import org.springframework.security.core.SpringSecurityCoreVersion;
 import org.springframework.security.ldap.LdapUtils;
 import org.springframework.util.Assert;
 
@@ -35,26 +36,26 @@ import org.springframework.util.Assert;
  */
 public class Person extends LdapUserDetailsImpl {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
-	private String givenName;
+	private @Nullable String givenName;
 
-	private String sn;
+	private @Nullable String sn;
 
-	private String description;
+	private @Nullable String description;
 
-	private String telephoneNumber;
+	private @Nullable String telephoneNumber;
 
 	private List<String> cn = new ArrayList<>();
 
 	protected Person() {
 	}
 
-	public String getGivenName() {
+	public @Nullable String getGivenName() {
 		return this.givenName;
 	}
 
-	public String getSn() {
+	public @Nullable String getSn() {
 		return this.sn;
 	}
 
@@ -62,11 +63,11 @@ public class Person extends LdapUserDetailsImpl {
 		return this.cn.toArray(new String[0]);
 	}
 
-	public String getDescription() {
+	public @Nullable String getDescription() {
 		return this.description;
 	}
 
-	public String getTelephoneNumber() {
+	public @Nullable String getTelephoneNumber() {
 		return this.telephoneNumber;
 	}
 
@@ -89,7 +90,9 @@ public class Person extends LdapUserDetailsImpl {
 
 		public Essence(DirContextOperations ctx) {
 			super(ctx);
-			setCn(ctx.getStringAttributes("cn"));
+			String[] cns = ctx.getStringAttributes("cn");
+			cns = (cns != null) ? cns : new String[0];
+			setCn(cns);
 			setGivenName(ctx.getStringAttribute("givenName"));
 			setSn(ctx.getStringAttribute("sn"));
 			setDescription(ctx.getStringAttribute("description"));
@@ -106,7 +109,7 @@ public class Person extends LdapUserDetailsImpl {
 			setSn(copyMe.sn);
 			setDescription(copyMe.getDescription());
 			setTelephoneNumber(copyMe.getTelephoneNumber());
-			((Person) this.instance).cn = new ArrayList<>(copyMe.cn);
+			setCn(copyMe.cn.toArray(String[]::new));
 		}
 
 		@Override
@@ -114,27 +117,33 @@ public class Person extends LdapUserDetailsImpl {
 			return new Person();
 		}
 
-		public void setGivenName(String givenName) {
+		public void setGivenName(@Nullable String givenName) {
+			Assert.notNull(this.instance, "Essence can only be used to create a single instance");
 			((Person) this.instance).givenName = givenName;
 		}
 
-		public void setSn(String sn) {
+		public void setSn(@Nullable String sn) {
+			Assert.notNull(this.instance, "Essence can only be used to create a single instance");
 			((Person) this.instance).sn = sn;
 		}
 
 		public void setCn(String[] cn) {
+			Assert.notNull(this.instance, "Essence can only be used to create a single instance");
 			((Person) this.instance).cn = Arrays.asList(cn);
 		}
 
 		public void addCn(String value) {
+			Assert.notNull(this.instance, "Essence can only be used to create a single instance");
 			((Person) this.instance).cn.add(value);
 		}
 
-		public void setTelephoneNumber(String tel) {
+		public void setTelephoneNumber(@Nullable String tel) {
+			Assert.notNull(this.instance, "Essence can only be used to create a single instance");
 			((Person) this.instance).telephoneNumber = tel;
 		}
 
-		public void setDescription(String desc) {
+		public void setDescription(@Nullable String desc) {
+			Assert.notNull(this.instance, "Essence can only be used to create a single instance");
 			((Person) this.instance).description = desc;
 		}
 

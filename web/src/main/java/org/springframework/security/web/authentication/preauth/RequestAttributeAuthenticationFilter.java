@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.security.web.authentication.preauth;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -46,7 +47,7 @@ public class RequestAttributeAuthenticationFilter extends AbstractPreAuthenticat
 
 	private String principalEnvironmentVariable = "REMOTE_USER";
 
-	private String credentialsEnvironmentVariable;
+	private @Nullable String credentialsEnvironmentVariable;
 
 	private boolean exceptionIfVariableMissing = true;
 
@@ -57,7 +58,7 @@ public class RequestAttributeAuthenticationFilter extends AbstractPreAuthenticat
 	 * missing and {@code exceptionIfVariableMissing} is set to {@code true}.
 	 */
 	@Override
-	protected Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
+	protected @Nullable Object getPreAuthenticatedPrincipal(HttpServletRequest request) {
 		String principal = (String) request.getAttribute(this.principalEnvironmentVariable);
 		if (principal == null && this.exceptionIfVariableMissing) {
 			throw new PreAuthenticatedCredentialsNotFoundException(
@@ -72,7 +73,7 @@ public class RequestAttributeAuthenticationFilter extends AbstractPreAuthenticat
 	 * credentials value. Otherwise a dummy value will be used.
 	 */
 	@Override
-	protected Object getPreAuthenticatedCredentials(HttpServletRequest request) {
+	protected @Nullable Object getPreAuthenticatedCredentials(HttpServletRequest request) {
 		if (this.credentialsEnvironmentVariable != null) {
 			return request.getAttribute(this.credentialsEnvironmentVariable);
 		}

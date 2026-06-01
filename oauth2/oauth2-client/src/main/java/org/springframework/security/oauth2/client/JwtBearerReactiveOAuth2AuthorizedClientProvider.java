@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,14 +106,18 @@ public final class JwtBearerReactiveOAuth2AuthorizedClientProvider implements Re
 	private Mono<Jwt> resolveJwtAssertion(OAuth2AuthorizationContext context) {
 		// @formatter:off
 		return Mono.just(context)
-				.map((ctx) -> ctx.getPrincipal().getPrincipal())
-				.filter((principal) -> principal instanceof Jwt)
-				.cast(Jwt.class);
+				.flatMap((ctx) -> {
+					Object principal = ctx.getPrincipal().getPrincipal();
+					return (principal instanceof Jwt)
+							? Mono.just((Jwt) principal)
+							: Mono.empty();
+				});
 		// @formatter:on
 	}
 
 	private boolean hasTokenExpired(OAuth2Token token) {
-		return this.clock.instant().isAfter(token.getExpiresAt().minus(this.clockSkew));
+		Instant expiresAt = token.getExpiresAt();
+		return expiresAt != null && this.clock.instant().isAfter(expiresAt.minus(this.clockSkew));
 	}
 
 	/**

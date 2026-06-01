@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,11 @@ public interface SecurityContextRepository {
 	 * @since 5.8
 	 */
 	default DeferredSecurityContext loadDeferredContext(HttpServletRequest request) {
-		Supplier<SecurityContext> supplier = () -> loadContext(new HttpRequestResponseHolder(request, null));
+		Supplier<SecurityContext> supplier = () -> {
+			@SuppressWarnings("NullAway") // fixed when remove deprecated method
+			HttpRequestResponseHolder holder = new HttpRequestResponseHolder(request, null);
+			return loadContext(holder);
+		};
 		return new SupplierDeferredSecurityContext(SingletonSupplier.of(supplier),
 				SecurityContextHolder.getContextHolderStrategy());
 	}

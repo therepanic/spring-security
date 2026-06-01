@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2002-2022 the original author or authors.
+  ~ Copyright 2004-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@
 		<custom-filter ref="userFilter" after="LOGOUT_FILTER"/>
 	</http>
 
-	<b:bean name="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"/>
+	<b:bean name="propertyPlaceholderConfigurer" class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer"/>
 
 	<b:bean name="userFilter" class="org.mockito.Mockito" factory-method="mock">
 		<b:constructor-arg value="jakarta.servlet.Filter" type="java.lang.Class"/>

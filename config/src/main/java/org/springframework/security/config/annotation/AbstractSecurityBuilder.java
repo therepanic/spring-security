@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ public abstract class AbstractSecurityBuilder<O> implements SecurityBuilder<O> {
 	private O object;
 
 	@Override
-	public final O build() throws Exception {
+	public final O build() {
 		if (this.building.compareAndSet(false, true)) {
 			this.object = doBuild();
 			return this.object;
@@ -55,9 +55,9 @@ public abstract class AbstractSecurityBuilder<O> implements SecurityBuilder<O> {
 
 	/**
 	 * Subclasses should implement this to perform the build.
-	 * @return the object that should be returned by {@link #build()}.
+	 * @return the object that should be returned by {@link SecurityBuilder#build()}.
 	 * @throws Exception if an error occurs
 	 */
-	protected abstract O doBuild() throws Exception;
+	protected abstract O doBuild();
 
 }

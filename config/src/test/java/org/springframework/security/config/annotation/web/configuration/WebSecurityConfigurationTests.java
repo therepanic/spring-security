@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ import org.springframework.security.web.access.AuthorizationManagerWebInvocation
 import org.springframework.security.web.access.PathPatternRequestTransformer;
 import org.springframework.security.web.access.RequestMatcherDelegatingWebInvocationPrivilegeEvaluator;
 import org.springframework.security.web.access.WebInvocationPrivilegeEvaluator;
-import org.springframework.security.web.access.expression.DefaultWebSecurityExpressionHandler;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.util.ClassUtils;
@@ -153,7 +152,7 @@ public class WebSecurityConfigurationTests {
 	public void loadConfigWhenDefaultSecurityExpressionHandlerThenDefaultIsRegistered() {
 		this.spring.register(WebSecurityExpressionHandlerDefaultsConfig.class).autowire();
 		assertThat(this.spring.getContext().getBean(SecurityExpressionHandler.class))
-			.isInstanceOf(DefaultWebSecurityExpressionHandler.class);
+			.isInstanceOf(AbstractSecurityExpressionHandler.class);
 	}
 
 	@Test
@@ -223,7 +222,8 @@ public class WebSecurityConfigurationTests {
 	// SEC-2773
 	@Test
 	public void getMethodDelegatingApplicationListenerWhenWebSecurityConfigurationThenIsStatic() {
-		Method method = ClassUtils.getMethod(WebSecurityConfiguration.class, "delegatingApplicationListener", null);
+		Method method = ClassUtils.getMethod(WebSecurityConfiguration.class, "delegatingApplicationListener",
+				(Class<?>[]) null);
 		assertThat(Modifier.isStatic(method.getModifiers())).isTrue();
 	}
 

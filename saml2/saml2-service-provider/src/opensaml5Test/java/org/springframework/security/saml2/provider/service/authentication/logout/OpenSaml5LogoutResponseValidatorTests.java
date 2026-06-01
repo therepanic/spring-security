@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ public class OpenSaml5LogoutResponseValidatorTests {
 		RelyingPartyRegistration registration = signing(verifying(registration())).build();
 		Saml2LogoutRequest logoutRequest = Saml2LogoutRequest.withRelyingPartyRegistration(registration)
 			.id("id")
+			.samlRequest("logout_request")
 			.build();
 		LogoutResponse logoutResponse = TestOpenSamlObjects.assertingPartyLogoutResponse(registration);
 		sign(logoutResponse, registration);
@@ -67,6 +68,7 @@ public class OpenSaml5LogoutResponseValidatorTests {
 			.build();
 		Saml2LogoutRequest logoutRequest = Saml2LogoutRequest.withRelyingPartyRegistration(registration)
 			.id("id")
+			.samlRequest("logout_request")
 			.build();
 		LogoutResponse logoutResponse = TestOpenSamlObjects.assertingPartyLogoutResponse(registration);
 		Saml2LogoutResponse response = redirect(logoutResponse, registration,
@@ -81,6 +83,7 @@ public class OpenSaml5LogoutResponseValidatorTests {
 		RelyingPartyRegistration registration = registration().build();
 		Saml2LogoutRequest logoutRequest = Saml2LogoutRequest.withRelyingPartyRegistration(registration)
 			.id("id")
+			.samlRequest("logout_request")
 			.build();
 		LogoutResponse logoutResponse = TestOpenSamlObjects.assertingPartyLogoutResponse(registration);
 		logoutResponse.getIssuer().setValue("wrong");
@@ -98,6 +101,7 @@ public class OpenSaml5LogoutResponseValidatorTests {
 		RelyingPartyRegistration registration = registration().build();
 		Saml2LogoutRequest logoutRequest = Saml2LogoutRequest.withRelyingPartyRegistration(registration)
 			.id("id")
+			.samlRequest("logout_request")
 			.build();
 		LogoutResponse logoutResponse = TestOpenSamlObjects.assertingPartyLogoutResponse(registration);
 		logoutResponse.setDestination("wrong");
@@ -115,6 +119,7 @@ public class OpenSaml5LogoutResponseValidatorTests {
 		RelyingPartyRegistration registration = registration().build();
 		Saml2LogoutRequest logoutRequest = Saml2LogoutRequest.withRelyingPartyRegistration(registration)
 			.id("id")
+			.samlRequest("logout_request")
 			.build();
 		LogoutResponse logoutResponse = TestOpenSamlObjects.assertingPartyLogoutResponse(registration);
 		logoutResponse.getStatus().getStatusCode().setValue(StatusCode.UNKNOWN_PRINCIPAL);
@@ -133,6 +138,7 @@ public class OpenSaml5LogoutResponseValidatorTests {
 		RelyingPartyRegistration registration = signing(verifying(registration())).build();
 		Saml2LogoutRequest logoutRequest = Saml2LogoutRequest.withRelyingPartyRegistration(registration)
 			.id("id")
+			.samlRequest("logout_request")
 			.build();
 		LogoutResponse logoutResponse = TestOpenSamlObjects.assertingPartyLogoutResponse(registration);
 		sign(logoutResponse, registration);

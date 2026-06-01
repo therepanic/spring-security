@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.net.URL;
 import java.util.regex.Pattern;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.cas.authentication.ServiceAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
@@ -33,6 +34,7 @@ import org.springframework.util.Assert;
  * and using the current URL minus the artifact and the corresponding value.
  *
  * @author Rob Winch
+ * @author Ngoc Nhan
  */
 final class DefaultServiceAuthenticationDetails extends WebAuthenticationDetails
 		implements ServiceAuthenticationDetails {
@@ -49,8 +51,8 @@ final class DefaultServiceAuthenticationDetails extends WebAuthenticationDetails
 	 * string from containing the artifact name and value. This can be created using
 	 * {@link #createArtifactPattern(String)}.
 	 */
-	DefaultServiceAuthenticationDetails(String casService, HttpServletRequest request, Pattern artifactPattern)
-			throws MalformedURLException {
+	DefaultServiceAuthenticationDetails(@Nullable String casService, HttpServletRequest request,
+			Pattern artifactPattern) throws MalformedURLException {
 		super(request);
 		URL casServiceUrl = new URL(casService);
 		int port = getServicePort(casServiceUrl);
@@ -69,14 +71,13 @@ final class DefaultServiceAuthenticationDetails extends WebAuthenticationDetails
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (this == obj) {
 			return true;
 		}
-		if (!super.equals(obj) || !(obj instanceof DefaultServiceAuthenticationDetails)) {
+		if (!super.equals(obj) || !(obj instanceof DefaultServiceAuthenticationDetails that)) {
 			return false;
 		}
-		ServiceAuthenticationDetails that = (ServiceAuthenticationDetails) obj;
 		return this.serviceUrl.equals(that.getServiceUrl());
 	}
 
@@ -100,17 +101,21 @@ final class DefaultServiceAuthenticationDetails extends WebAuthenticationDetails
 	/**
 	 * If present, removes the artifactParameterName and the corresponding value from the
 	 * query String.
-	 * @param request
+	 * @param request the current {@link HttpServletRequest} to obtain the
+	 * {@link #getServiceUrl()} from.
+	 * @param artifactPattern the {@link Pattern} that will be used to clean up the query
+	 * string from containing the artifact name and value. This can be created using
+	 * {@link #createArtifactPattern(String)}.
 	 * @return the query String minus the artifactParameterName and the corresponding
 	 * value.
 	 */
-	private String getQueryString(final HttpServletRequest request, final Pattern artifactPattern) {
+	private @Nullable String getQueryString(final HttpServletRequest request, final Pattern artifactPattern) {
 		final String query = request.getQueryString();
 		if (query == null) {
 			return null;
 		}
 		String result = artifactPattern.matcher(query).replaceFirst("");
-		if (result.length() == 0) {
+		if (result.isEmpty()) {
 			return null;
 		}
 		// strip off the trailing & only if the artifact was the first query param
@@ -121,8 +126,9 @@ final class DefaultServiceAuthenticationDetails extends WebAuthenticationDetails
 	 * Creates a {@link Pattern} that can be passed into the constructor. This allows the
 	 * {@link Pattern} to be reused for every instance of
 	 * {@link DefaultServiceAuthenticationDetails}.
-	 * @param artifactParameterName
-	 * @return
+	 * @param artifactParameterName the artifactParameterName that is removed from the
+	 * current URL. The result becomes the service url. Cannot be null or an empty String.
+	 * @return a {@link Pattern}
 	 */
 	static Pattern createArtifactPattern(String artifactParameterName) {
 		Assert.hasLength(artifactParameterName, "artifactParameterName is expected to have a length");

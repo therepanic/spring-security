@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package org.springframework.security.web.authentication;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -24,12 +27,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.Contract;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationManagerResolver;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.context.SecurityContextHolderStrategy;
@@ -85,6 +91,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
 	private AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver;
 
+	private boolean mfaEnabled;
+
 	public AuthenticationFilter(AuthenticationManager authenticationManager,
 			AuthenticationConverter authenticationConverter) {
 		this((AuthenticationManagerResolver<HttpServletRequest>) (r) -> authenticationManager, authenticationConverter);
@@ -109,6 +117,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
 	public AuthenticationConverter getAuthenticationConverter() {
 		return this.authenticationConverter;
+	}
+
+	/**
+	 * Enables Multi-Factor Authentication (MFA) support.
+	 * @param mfaEnabled true to enable MFA support, false to disable it. Default is
+	 * false.
+	 */
+	public void setMfaEnabled(boolean mfaEnabled) {
+		this.mfaEnabled = mfaEnabled;
 	}
 
 	public void setAuthenticationConverter(AuthenticationConverter authenticationConverter) {
@@ -183,6 +200,23 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 				filterChain.doFilter(request, response);
 				return;
 			}
+			Authentication current = this.securityContextHolderStrategy.getContext().getAuthentication();
+			if (shouldPerformMfa(current, authenticationResult)) {
+				authenticationResult = authenticationResult.toBuilder()
+				// @formatter:off
+					.authorities((a) -> {
+						Set<String> newAuthorities = a.stream()
+							.map(GrantedAuthority::getAuthority)
+							.collect(Collectors.toUnmodifiableSet());
+						for (GrantedAuthority currentAuthority : current.getAuthorities()) {
+							if (!newAuthorities.contains(currentAuthority.getAuthority())) {
+								a.add(currentAuthority);
+							}
+						}
+					})
+					.build();
+					// @formatter:on
+			}
 			HttpSession session = request.getSession(false);
 			if (session != null) {
 				request.changeSessionId();
@@ -192,6 +226,29 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 		catch (AuthenticationException ex) {
 			unsuccessfulAuthentication(request, response, ex);
 		}
+	}
+
+	@Contract("null, _ -> false")
+	private boolean shouldPerformMfa(@Nullable Authentication current, Authentication authenticationResult) {
+		if (!this.mfaEnabled) {
+			return false;
+		}
+		if (current == null || !current.isAuthenticated()) {
+			return false;
+		}
+		if (!declaresToBuilder(authenticationResult)) {
+			return false;
+		}
+		return current.getName().equals(authenticationResult.getName());
+	}
+
+	private static boolean declaresToBuilder(Authentication authentication) {
+		for (Method method : authentication.getClass().getDeclaredMethods()) {
+			if (method.getName().equals("toBuilder") && method.getParameterTypes().length == 0) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
@@ -218,7 +275,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 		this.successHandler.onAuthenticationSuccess(request, response, chain, authentication);
 	}
 
-	private Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
+	private @Nullable Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response)
 			throws AuthenticationException, ServletException {
 		Authentication authentication = this.authenticationConverter.convert(request);
 		if (authentication == null) {

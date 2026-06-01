@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,12 @@ public class SpringSecurityAuthenticationSource implements AuthenticationSource 
 			log.debug("Returning empty String as Credentials since authentication is null");
 			return "";
 		}
-		return (String) authentication.getCredentials();
+		String password = (String) authentication.getCredentials();
+		if (password == null) {
+			log.debug("Returning empty String as Credentials since password is null");
+			return "";
+		}
+		return password;
 	}
 
 	/**

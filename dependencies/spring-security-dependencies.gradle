@@ -1,5 +1,6 @@
 plugins {
 	id 'java-platform'
+	id 'compile-warnings-error'
 }
 
 javaPlatform {
@@ -11,13 +12,16 @@ dependencies {
 		def springFrameworkVersion = project.property("springFrameworkVersion")
 		def reactorVersion = project.property("reactorVersion")
 		def springDataVersion = project.property("springDataVersion")
+		def micrometerVersion = project.property("micrometerVersion")
 		api platform("org.springframework:spring-framework-bom:$springFrameworkVersion")
 		api platform("io.projectreactor:reactor-bom:$reactorVersion")
 		api platform("org.springframework.data:spring-data-bom:$springDataVersion")
+		api platform("io.micrometer:micrometer-bom:$micrometerVersion")
 	} else {
 		api platform(libs.org.springframework.spring.framework.bom)
 		api platform(libs.io.projectreactor.reactor.bom)
 		api platform(libs.org.springframework.data.spring.data.bom)
+		api platform(libs.io.micrometer.micrometer.bom)
 	}
 	api platform(libs.io.rsocket.rsocket.bom)
 	api platform(libs.org.junit.junit.bom)
@@ -25,6 +29,7 @@ dependencies {
 	api platform(libs.org.jetbrains.kotlin.kotlin.bom)
 	api platform(libs.org.jetbrains.kotlinx.kotlinx.coroutines.bom)
 	api platform(libs.com.fasterxml.jackson.jackson.bom)
+	api platform(libs.tools.jackson.jackson.bom)
 	constraints {
 		api libs.ch.qos.logback.logback.classic
 		api libs.com.google.inject.guice
@@ -60,9 +65,10 @@ dependencies {
 		api libs.org.hamcrest
 		api libs.org.hibernate.orm.hibernate.core
 		api libs.org.hsqldb
+		api libs.com.jayway.jsonpath.json.path
 		api libs.org.apereo.cas.client.cas.client.core
-		api libs.org.opensaml.opensaml.saml.api
-		api libs.org.opensaml.opensaml.saml.impl
+		api libs.org.opensaml.opensaml5.saml.api
+		api libs.org.opensaml.opensaml5.saml.impl
 		api libs.org.python.jython
 		api libs.org.seleniumhq.selenium.htmlunit.driver
 		api libs.org.seleniumhq.selenium.selenium.java
@@ -77,6 +83,6 @@ dependencies {
 		api libs.org.apache.maven.resolver.maven.resolver.transport.http
 		api libs.org.apache.maven.maven.resolver.provider
 		api libs.org.instancio.instancio.junit
+		api libs.com.password4j.password4j
 	}
 }
-

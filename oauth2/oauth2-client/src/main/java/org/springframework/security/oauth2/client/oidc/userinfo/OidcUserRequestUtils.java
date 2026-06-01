@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -40,43 +39,31 @@ import org.springframework.util.StringUtils;
 final class OidcUserRequestUtils {
 
 	/**
-	 * Determines if an {@link OidcUserRequest} should attempt to retrieve the user info
-	 * endpoint. Will return true if all of the following are true:
+	 * Determines if an {@link OidcUserRequest} should attempt to retrieve the user info.
+	 * Will return true if all the following are true:
 	 *
 	 * <ul>
 	 * <li>The user info endpoint is defined on the ClientRegistration</li>
 	 * <li>The Client Registration uses the
-	 * {@link AuthorizationGrantType#AUTHORIZATION_CODE} and scopes in the access token
-	 * are defined in the {@link ClientRegistration}</li>
+	 * {@link AuthorizationGrantType#AUTHORIZATION_CODE}</li>
 	 * </ul>
 	 * @param userRequest
 	 * @return
 	 */
 	static boolean shouldRetrieveUserInfo(OidcUserRequest userRequest) {
 		// Auto-disabled if UserInfo Endpoint URI is not provided
-		ClientRegistration clientRegistration = userRequest.getClientRegistration();
-		if (!StringUtils.hasLength(clientRegistration.getProviderDetails().getUserInfoEndpoint().getUri())) {
-			return false;
-		}
-		// The Claims requested by the profile, email, address, and phone scope values
-		// are returned from the UserInfo Endpoint (as described in Section 5.3.2),
-		// when a response_type value is used that results in an Access Token being
-		// issued.
-		// However, when no Access Token is issued, which is the case for the
-		// response_type=id_token,
-		// the resulting Claims are returned in the ID Token.
-		// The Authorization Code Grant Flow, which is response_type=code, results in an
-		// Access Token being issued.
-		if (AuthorizationGrantType.AUTHORIZATION_CODE.equals(clientRegistration.getAuthorizationGrantType())) {
-			// Return true if there is at least one match between the authorized scope(s)
-			// and UserInfo scope(s)
-			return CollectionUtils.containsAny(userRequest.getAccessToken().getScopes(),
-					userRequest.getClientRegistration().getScopes());
+		ClientRegistration.ProviderDetails providerDetails = userRequest.getClientRegistration().getProviderDetails();
+		if (StringUtils.hasLength(providerDetails.getUserInfoEndpoint().getUri())
+				&& AuthorizationGrantType.AUTHORIZATION_CODE
+					.equals(userRequest.getClientRegistration().getAuthorizationGrantType())) {
+			return true;
 		}
 		return false;
 	}
 
-	static OidcUser getUser(OidcUserRequest userRequest, OidcUserInfo userInfo) {
+	static OidcUser getUser(OidcUserSource userMetadata) {
+		OidcUserRequest userRequest = userMetadata.getUserRequest();
+		OidcUserInfo userInfo = userMetadata.getUserInfo();
 		Set<GrantedAuthority> authorities = new LinkedHashSet<>();
 		ClientRegistration.ProviderDetails providerDetails = userRequest.getClientRegistration().getProviderDetails();
 		String userNameAttributeName = providerDetails.getUserInfoEndpoint().getUserNameAttributeName();

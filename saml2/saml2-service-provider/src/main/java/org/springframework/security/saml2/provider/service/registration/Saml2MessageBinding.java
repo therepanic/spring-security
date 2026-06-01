@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2020 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.security.saml2.provider.service.registration;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * The type of bindings that messages are exchanged using Supported bindings are
@@ -50,7 +52,7 @@ public enum Saml2MessageBinding {
 	 * @return the resolved {@code Saml2MessageBinding}, or {@code null} if not found
 	 * @since 5.5
 	 */
-	public static Saml2MessageBinding from(String name) {
+	public static @Nullable Saml2MessageBinding from(String name) {
 		for (Saml2MessageBinding value : values()) {
 			if (value.getUrn().equals(name)) {
 				return value;

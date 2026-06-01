@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.core.io.buffer.DataBuffer;
@@ -55,7 +56,7 @@ public class LoginPageGeneratingWebFilter implements WebFilter {
 
 	private boolean oneTimeTokenEnabled = false;
 
-	private String generateOneTimeTokenUrl;
+	private @Nullable String generateOneTimeTokenUrl;
 
 	/**
 	 * Specifies the URL that a One-Time Token generate request will be processed.
@@ -251,7 +252,7 @@ public class LoginPageGeneratingWebFilter implements WebFilter {
 			      {{errorMessage}}{{logoutMessage}}
 			        <p>
 			          <label for="ott-username" class="screenreader">Username</label>
-			          <input type="text" id="ott-username" name="username" placeholder="Username" required>
+			          <input type="text" id="ott-username" name="username" placeholder="Username" required autofocus>
 			        </p>
 			        {{csrf}}
 			        <button class="primary" type="submit" form="ott-form">Send Token</button>

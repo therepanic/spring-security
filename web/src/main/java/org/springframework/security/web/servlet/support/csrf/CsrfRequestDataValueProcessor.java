@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2013 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.servlet.support.RequestDataValueProcessor;
@@ -55,7 +56,7 @@ public final class CsrfRequestDataValueProcessor implements RequestDataValueProc
 	}
 
 	@Override
-	public String processFormFieldValue(HttpServletRequest request, String name, String value, String type) {
+	public String processFormFieldValue(HttpServletRequest request, @Nullable String name, String value, String type) {
 		return value;
 	}
 

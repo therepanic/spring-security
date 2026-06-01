@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2023 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,9 @@
 
 package org.springframework.security.core.authority;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.SpringSecurityCoreVersion;
 import org.springframework.util.Assert;
 
 /**
@@ -28,16 +29,22 @@ import org.springframework.util.Assert;
  * {@link org.springframework.security.core.Authentication Authentication} object.
  *
  * @author Luke Taylor
+ * @author Yanming Zhou
  */
 public final class SimpleGrantedAuthority implements GrantedAuthority {
 
-	private static final long serialVersionUID = SpringSecurityCoreVersion.SERIAL_VERSION_UID;
+	private static final long serialVersionUID = 620L;
 
 	private final String role;
 
-	public SimpleGrantedAuthority(String role) {
-		Assert.hasText(role, "A granted authority textual representation is required");
-		this.role = role;
+	/**
+	 * Constructs a {@code SimpleGrantedAuthority} using the provided authority.
+	 * @param authority The provided authority, including any prefix; for example,
+	 * {@code ROLE_ADMIN}
+	 */
+	public SimpleGrantedAuthority(String authority) {
+		Assert.hasText(authority, "A granted authority textual representation is required");
+		this.role = authority;
 	}
 
 	@Override
@@ -46,7 +53,7 @@ public final class SimpleGrantedAuthority implements GrantedAuthority {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (this == obj) {
 			return true;
 		}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.rsocket.metadata.AuthMetadataCodec;
 import io.rsocket.metadata.WellKnownAuthType;
 import io.rsocket.metadata.WellKnownMimeType;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.core.codec.ByteArrayDecoder;
@@ -66,7 +67,7 @@ public class AuthenticationPayloadExchangeConverter implements PayloadExchangeAu
 			.flatMap((metadata) -> Mono.justOrEmpty(authentication(metadata)));
 	}
 
-	private Authentication authentication(Map<String, Object> metadata) {
+	private @Nullable Authentication authentication(Map<String, Object> metadata) {
 		byte[] authenticationMetadata = (byte[]) metadata.get("authentication");
 		if (authenticationMetadata == null) {
 			return null;

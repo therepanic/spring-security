@@ -97,7 +97,11 @@ val authorities = authentication.authorities
 ----
 ======
 
-// FIXME: Add links to and relevant description of HttpServletRequest.getRemoteUser() and @CurrentSecurityContext @AuthenticationPrincipal
+In Spring MVC, you can resolve the current principal with
+xref:servlet/integrations/mvc.adoc#mvc-authentication-principal[`@AuthenticationPrincipal`]
+and the full `SecurityContext` with
+xref:servlet/integrations/mvc.adoc#mvc-current-security-context[`@CurrentSecurityContext`].
+For Servlet API access, use `HttpServletRequest#getRemoteUser`.
 
 By default, `SecurityContextHolder` uses a `ThreadLocal` to store these details, which means that the `SecurityContext` is always available to methods in the same thread, even if the `SecurityContext` is not explicitly passed around as an argument to those methods.
 Using a `ThreadLocal` in this way is quite safe if you take care to clear the thread after the present principal's request is processed.
@@ -139,6 +143,11 @@ When authenticating with a username/password this is often an instance of xref:s
 In many cases, this is cleared after the user is authenticated, to ensure that it is not leaked.
 * `authorities`: The <<servlet-authentication-granted-authority,`GrantedAuthority`>> instances are high-level permissions the user is granted.
 Two examples are roles and scopes.
+
+It is also equipped with a `AdditionalRequiredFactorsBuilder` that allows you to mutate an existing `Authentication` instance and potentially merge it with another.
+This is useful in scenarios like taking the authorities from one authentication step, like form login, and applying them to another, like one-time-token login, like so:
+
+include-code::./CopyAuthoritiesTests[tag=springSecurity,indent=0]
 
 [[servlet-authentication-granted-authority]]
 == GrantedAuthority
@@ -231,8 +240,6 @@ In other cases, a client makes an unauthenticated request to a resource that the
 In this case, an implementation of `AuthenticationEntryPoint` is used to request credentials from the client.
 The `AuthenticationEntryPoint` implementation might perform a xref:servlet/authentication/passwords/form.adoc#servlet-authentication-form[redirect to a log in page], respond with an xref:servlet/authentication/passwords/basic.adoc#servlet-authentication-basic[WWW-Authenticate] header, or take other action.
 
-
-
 // FIXME: authenticationsuccesshandler
 // FIXME: authenticationfailurehandler
 
@@ -266,6 +273,8 @@ image:{icondir}/number_4.png[] If authentication is successful, then __Success__
 
 * `SessionAuthenticationStrategy` is notified of a new login.
 See the javadoc:org.springframework.security.web.authentication.session.SessionAuthenticationStrategy[] interface.
+* Any already-authenticated `Authentication` in the <<servlet-authentication-securitycontextholder>> is loaded and its
+authorities are added to the returned <<servlet-authentication-authentication>>.
 * The <<servlet-authentication-authentication>> is set on the <<servlet-authentication-securitycontextholder>>.
 Later, if you need to save the `SecurityContext` so that it can be automatically set on future requests, `SecurityContextRepository#saveContext` must be explicitly invoked.
 See the javadoc:org.springframework.security.web.context.SecurityContextHolderFilter[] class.

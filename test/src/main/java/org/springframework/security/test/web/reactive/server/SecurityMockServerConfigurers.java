@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,15 +29,17 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.client.reactive.ClientHttpConnector;
-import org.springframework.lang.Nullable;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -257,6 +259,10 @@ public final class SecurityMockServerConfigurers {
 				@Nullable WebHttpHandlerBuilder httpHandlerBuilder, @Nullable ClientHttpConnector connector) {
 			CsrfWebFilter filter = new CsrfWebFilter();
 			filter.setRequireCsrfProtectionMatcher((e) -> ServerWebExchangeMatcher.MatchResult.notMatch());
+			if (httpHandlerBuilder == null) {
+				throw new UnsupportedOperationException(
+						"Cannot apply Csrf because WebHttpHandlerBuilder is null. You must use mock clients.");
+			}
 			httpHandlerBuilder.filters((filters) -> filters.add(0, filter));
 		}
 
@@ -398,6 +404,10 @@ public final class SecurityMockServerConfigurers {
 		public void afterConfigurerAdded(WebTestClient.Builder builder,
 				@Nullable WebHttpHandlerBuilder webHttpHandlerBuilder,
 				@Nullable ClientHttpConnector clientHttpConnector) {
+			if (webHttpHandlerBuilder == null) {
+				throw new UnsupportedOperationException(
+						"Cannot apply Spring Security Test Support to null WebHttpHandlerBuilder. This happens when trying to integrate with non-mock based clients.");
+			}
 			webHttpHandlerBuilder.filters(addSetupMutatorFilter());
 		}
 
@@ -540,6 +550,10 @@ public final class SecurityMockServerConfigurers {
 		@Override
 		public void afterConfigurerAdded(WebTestClient.Builder builder,
 				@Nullable WebHttpHandlerBuilder httpHandlerBuilder, @Nullable ClientHttpConnector connector) {
+			if (httpHandlerBuilder == null) {
+				throw new UnsupportedOperationException(
+						"Cannot apply Spring Security Test Support to null WebHttpHandlerBuilder. This happens when trying to integrate with non-mock based clients.");
+			}
 			httpHandlerBuilder.filter((exchange, chain) -> {
 				CsrfWebFilter.skipExchange(exchange);
 				return chain.filter(exchange);
@@ -634,6 +648,10 @@ public final class SecurityMockServerConfigurers {
 		@Override
 		public void afterConfigurerAdded(WebTestClient.Builder builder,
 				@Nullable WebHttpHandlerBuilder httpHandlerBuilder, @Nullable ClientHttpConnector connector) {
+			if (httpHandlerBuilder == null) {
+				throw new UnsupportedOperationException(
+						"Cannot apply Spring Security Test Support to null WebHttpHandlerBuilder. This happens when trying to integrate with non-mock based clients.");
+			}
 			httpHandlerBuilder.filter((exchange, chain) -> {
 				CsrfWebFilter.skipExchange(exchange);
 				return chain.filter(exchange);
@@ -688,7 +706,7 @@ public final class SecurityMockServerConfigurers {
 			return new OAuth2AccessToken(OAuth2AccessToken.TokenType.BEARER, "token", issuedAt, expiresAt);
 		}
 
-		private Instant getInstant(Map<String, Object> attributes, String name) {
+		private @Nullable Instant getInstant(Map<String, Object> attributes, String name) {
 			Object value = attributes.get(name);
 			if (value == null) {
 				return null;
@@ -865,13 +883,14 @@ public final class SecurityMockServerConfigurers {
 
 		private OAuth2AccessToken accessToken;
 
-		private OidcIdToken idToken;
+		private @Nullable OidcIdToken idToken;
 
+		@SuppressWarnings("NullAway.Init")
 		private OidcUserInfo userInfo;
 
 		private Supplier<OidcUser> oidcUser = this::defaultPrincipal;
 
-		private Collection<GrantedAuthority> authorities;
+		private @Nullable Collection<GrantedAuthority> authorities;
 
 		private OidcLoginMutator(OAuth2AccessToken accessToken) {
 			this.accessToken = accessToken;
@@ -1040,7 +1059,7 @@ public final class SecurityMockServerConfigurers {
 
 		private String registrationId = "test";
 
-		private ClientRegistration clientRegistration;
+		private @Nullable ClientRegistration clientRegistration;
 
 		private String principalName = "user";
 
@@ -1118,6 +1137,10 @@ public final class SecurityMockServerConfigurers {
 		@Override
 		public void afterConfigurerAdded(WebTestClient.Builder builder,
 				@Nullable WebHttpHandlerBuilder httpHandlerBuilder, @Nullable ClientHttpConnector connector) {
+			if (httpHandlerBuilder == null) {
+				throw new UnsupportedOperationException(
+						"Cannot apply Spring Security Test Support to null WebHttpHandlerBuilder. This happens when trying to integrate with non-mock based clients.");
+			}
 			httpHandlerBuilder.filters(addAuthorizedClientFilter());
 		}
 
@@ -1127,11 +1150,15 @@ public final class SecurityMockServerConfigurers {
 				ServerOAuth2AuthorizedClientRepository authorizedClientRepository = OAuth2ClientServerTestUtils
 					.getAuthorizedClientRepository(exchange);
 				if (!(authorizedClientRepository instanceof TestOAuth2AuthorizedClientRepository)) {
+					Assert.isTrue(authorizedClientRepository != null,
+							"ServerOAuth2AuthorizedClientRepository cannot be null");
 					authorizedClientRepository = new TestOAuth2AuthorizedClientRepository(authorizedClientRepository);
 					OAuth2ClientServerTestUtils.setAuthorizedClientRepository(exchange, authorizedClientRepository);
 				}
 				TestOAuth2AuthorizedClientRepository.enable(exchange);
-				return authorizedClientRepository.saveAuthorizedClient(client, null, exchange)
+				Authentication anonymousPrincipal = new AnonymousAuthenticationToken("anonymous", "anonymousUser",
+						AuthorityUtils.createAuthorityList("ROLE_ANONYMOUS"));
+				return authorizedClientRepository.saveAuthorizedClient(client, anonymousPrincipal, exchange)
 					.then(chain.filter(exchange));
 			});
 		}
@@ -1163,7 +1190,7 @@ public final class SecurityMockServerConfigurers {
 
 			private final ReactiveOAuth2AuthorizedClientManager delegate;
 
-			private ServerOAuth2AuthorizedClientRepository authorizedClientRepository;
+			private @Nullable ServerOAuth2AuthorizedClientRepository authorizedClientRepository;
 
 			TestOAuth2AuthorizedClientManager(ReactiveOAuth2AuthorizedClientManager delegate) {
 				this.delegate = delegate;
@@ -1172,7 +1199,7 @@ public final class SecurityMockServerConfigurers {
 			@Override
 			public Mono<OAuth2AuthorizedClient> authorize(OAuth2AuthorizeRequest authorizeRequest) {
 				ServerWebExchange exchange = authorizeRequest.getAttribute(ServerWebExchange.class.getName());
-				if (isEnabled(exchange)) {
+				if (exchange != null && isEnabled(exchange) && this.authorizedClientRepository != null) {
 					return this.authorizedClientRepository.loadAuthorizedClient(
 							authorizeRequest.getClientRegistrationId(), authorizeRequest.getPrincipal(), exchange);
 				}
@@ -1183,8 +1210,8 @@ public final class SecurityMockServerConfigurers {
 				exchange.getAttributes().put(ENABLED_ATTR_NAME, Boolean.TRUE);
 			}
 
-			boolean isEnabled(ServerWebExchange exchange) {
-				return Boolean.TRUE.equals(exchange.getAttribute(ENABLED_ATTR_NAME));
+			boolean isEnabled(@Nullable ServerWebExchange exchange) {
+				return exchange != null && Boolean.TRUE.equals(exchange.getAttribute(ENABLED_ATTR_NAME));
 			}
 
 		}
@@ -1210,7 +1237,8 @@ public final class SecurityMockServerConfigurers {
 			public <T extends OAuth2AuthorizedClient> Mono<T> loadAuthorizedClient(String clientRegistrationId,
 					Authentication principal, ServerWebExchange exchange) {
 				if (isEnabled(exchange)) {
-					return Mono.just(exchange.getAttribute(TOKEN_ATTR_NAME));
+					T attr = exchange.getAttribute(TOKEN_ATTR_NAME);
+					return Mono.justOrEmpty(attr);
 				}
 				return this.delegate.loadAuthorizedClient(clientRegistrationId, principal, exchange);
 			}
@@ -1261,7 +1289,8 @@ public final class SecurityMockServerConfigurers {
 			 * @return the {@link ReactiveOAuth2AuthorizedClientManager} for the specified
 			 * {@link ServerWebExchange}
 			 */
-			static ServerOAuth2AuthorizedClientRepository getAuthorizedClientRepository(ServerWebExchange exchange) {
+			static @Nullable ServerOAuth2AuthorizedClientRepository getAuthorizedClientRepository(
+					ServerWebExchange exchange) {
 				ReactiveOAuth2AuthorizedClientManager manager = getOAuth2AuthorizedClientManager(exchange);
 				if (manager == null) {
 					return DEFAULT_CLIENT_REPO;
@@ -1294,7 +1323,8 @@ public final class SecurityMockServerConfigurers {
 				((TestOAuth2AuthorizedClientManager) manager).authorizedClientRepository = repository;
 			}
 
-			static ReactiveOAuth2AuthorizedClientManager getOAuth2AuthorizedClientManager(ServerWebExchange exchange) {
+			static @Nullable ReactiveOAuth2AuthorizedClientManager getOAuth2AuthorizedClientManager(
+					ServerWebExchange exchange) {
 				OAuth2AuthorizedClientArgumentResolver resolver = findResolver(exchange,
 						OAuth2AuthorizedClientArgumentResolver.class);
 				if (resolver == null) {
@@ -1323,7 +1353,7 @@ public final class SecurityMockServerConfigurers {
 			}
 
 			@SuppressWarnings("unchecked")
-			static <T extends HandlerMethodArgumentResolver> T findResolver(ServerWebExchange exchange,
+			static <T extends HandlerMethodArgumentResolver> @Nullable T findResolver(ServerWebExchange exchange,
 					Class<T> resolverClass) {
 				if (!ClassUtils.isPresent(
 						"org.springframework.web.reactive.result.method.annotation.RequestMappingHandlerAdapter",
@@ -1335,7 +1365,7 @@ public final class SecurityMockServerConfigurers {
 
 			private static class WebFluxClasspathGuard {
 
-				static <T extends HandlerMethodArgumentResolver> T findResolver(ServerWebExchange exchange,
+				static <T extends HandlerMethodArgumentResolver> @Nullable T findResolver(ServerWebExchange exchange,
 						Class<T> resolverClass) {
 					RequestMappingHandlerAdapter handlerAdapter = getRequestMappingHandlerAdapter(exchange);
 					if (handlerAdapter == null) {
@@ -1358,7 +1388,7 @@ public final class SecurityMockServerConfigurers {
 					return null;
 				}
 
-				private static RequestMappingHandlerAdapter getRequestMappingHandlerAdapter(
+				private static @Nullable RequestMappingHandlerAdapter getRequestMappingHandlerAdapter(
 						ServerWebExchange exchange) {
 					ApplicationContext context = exchange.getApplicationContext();
 					if (context != null) {

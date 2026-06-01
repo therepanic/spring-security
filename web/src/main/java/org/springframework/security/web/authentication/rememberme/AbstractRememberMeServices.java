@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package org.springframework.security.web.authentication.rememberme;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -28,6 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.MessageSource;
@@ -59,6 +59,7 @@ import org.springframework.util.StringUtils;
  * @author Rob Winch
  * @author Eddú Meléndez
  * @author Onur Kagan Ozcan
+ * @author Ngoc Nhan
  * @since 2.0
  */
 public abstract class AbstractRememberMeServices
@@ -84,7 +85,7 @@ public abstract class AbstractRememberMeServices
 
 	private String cookieName = SPRING_SECURITY_REMEMBER_ME_COOKIE_KEY;
 
-	private String cookieDomain;
+	private @Nullable String cookieDomain;
 
 	private String parameter = DEFAULT_PARAMETER;
 
@@ -94,7 +95,7 @@ public abstract class AbstractRememberMeServices
 
 	private int tokenValiditySeconds = TWO_WEEKS_S;
 
-	private Boolean useSecureCookie = null;
+	private @Nullable Boolean useSecureCookie = null;
 
 	private GrantedAuthoritiesMapper authoritiesMapper = new NullAuthoritiesMapper();
 
@@ -123,13 +124,13 @@ public abstract class AbstractRememberMeServices
 	 * which in turn is used to create a valid authentication token.
 	 */
 	@Override
-	public Authentication autoLogin(HttpServletRequest request, HttpServletResponse response) {
+	public @Nullable Authentication autoLogin(HttpServletRequest request, HttpServletResponse response) {
 		String rememberMeCookie = extractRememberMeCookie(request);
 		if (rememberMeCookie == null) {
 			return null;
 		}
 		this.logger.debug("Remember-me cookie detected");
-		if (rememberMeCookie.length() == 0) {
+		if (rememberMeCookie.isEmpty()) {
 			this.logger.debug("Cookie was empty");
 			cancelCookie(request, response);
 			return null;
@@ -168,9 +169,9 @@ public abstract class AbstractRememberMeServices
 	 * @param request the submitted request which is to be authenticated
 	 * @return the cookie value (if present), null otherwise.
 	 */
-	protected String extractRememberMeCookie(HttpServletRequest request) {
+	protected @Nullable String extractRememberMeCookie(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();
-		if ((cookies == null) || (cookies.length == 0)) {
+		if (cookies == null) {
 			return null;
 		}
 		for (Cookie cookie : cookies) {
@@ -220,12 +221,7 @@ public abstract class AbstractRememberMeServices
 		}
 		String[] tokens = StringUtils.delimitedListToStringArray(cookieAsPlainText, DELIMITER);
 		for (int i = 0; i < tokens.length; i++) {
-			try {
-				tokens[i] = URLDecoder.decode(tokens[i], StandardCharsets.UTF_8.toString());
-			}
-			catch (UnsupportedEncodingException ex) {
-				this.logger.error(ex.getMessage(), ex);
-			}
+			tokens[i] = URLDecoder.decode(tokens[i], StandardCharsets.UTF_8);
 		}
 		return tokens;
 	}
@@ -238,12 +234,7 @@ public abstract class AbstractRememberMeServices
 	protected String encodeCookie(String[] cookieTokens) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < cookieTokens.length; i++) {
-			try {
-				sb.append(URLEncoder.encode(cookieTokens[i], StandardCharsets.UTF_8.toString()));
-			}
-			catch (UnsupportedEncodingException ex) {
-				this.logger.error(ex.getMessage(), ex);
-			}
+			sb.append(URLEncoder.encode(cookieTokens[i], StandardCharsets.UTF_8));
 			if (i < cookieTokens.length - 1) {
 				sb.append(DELIMITER);
 			}
@@ -382,7 +373,7 @@ public abstract class AbstractRememberMeServices
 
 	private String getCookiePath(HttpServletRequest request) {
 		String contextPath = request.getContextPath();
-		return (contextPath.length() > 0) ? contextPath : "/";
+		return contextPath.isEmpty() ? "/" : contextPath;
 	}
 
 	/**
@@ -390,7 +381,8 @@ public abstract class AbstractRememberMeServices
 	 * {@code cancelCookie()}.
 	 */
 	@Override
-	public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+	public void logout(HttpServletRequest request, HttpServletResponse response,
+			@Nullable Authentication authentication) {
 		this.logger.debug(LogMessage
 			.of(() -> "Logout of user " + ((authentication != null) ? authentication.getName() : "Unknown")));
 		cancelCookie(request, response);

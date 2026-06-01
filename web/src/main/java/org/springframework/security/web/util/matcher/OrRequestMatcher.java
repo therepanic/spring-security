@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2024 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
@@ -33,13 +34,13 @@ import org.springframework.util.Assert;
  */
 public final class OrRequestMatcher implements RequestMatcher {
 
-	private final List<RequestMatcher> requestMatchers;
+	private final List<? extends RequestMatcher> requestMatchers;
 
 	/**
 	 * Creates a new instance
 	 * @param requestMatchers the {@link RequestMatcher} instances to try
 	 */
-	public OrRequestMatcher(List<RequestMatcher> requestMatchers) {
+	public OrRequestMatcher(List<? extends RequestMatcher> requestMatchers) {
 		Assert.notEmpty(requestMatchers, "requestMatchers must contain a value");
 		Assert.noNullElements(requestMatchers, "requestMatchers cannot contain null values");
 		this.requestMatchers = requestMatchers;
@@ -83,7 +84,7 @@ public final class OrRequestMatcher implements RequestMatcher {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

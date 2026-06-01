@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.access.AccessDeniedException;
@@ -190,7 +191,7 @@ public final class CsrfFilter extends OncePerRequestFilter {
 	 * @param actual
 	 * @return
 	 */
-	private static boolean equalsConstantTime(String expected, String actual) {
+	private static boolean equalsConstantTime(String expected, @Nullable String actual) {
 		if (expected == actual) {
 			return true;
 		}

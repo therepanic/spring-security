@@ -1,5 +1,5 @@
 /*
- * Copyright 2010-2016 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint;
+import org.springframework.util.Assert;
 
 /**
  * A RequestMatcher implementation which uses a SpEL expression
@@ -51,7 +52,10 @@ public class ELRequestMatcher implements RequestMatcher {
 	@Override
 	public boolean matches(HttpServletRequest request) {
 		EvaluationContext context = createELContext(request);
-		return this.expression.getValue(context, Boolean.class);
+		Boolean result = this.expression.getValue(context, Boolean.class);
+		Assert.notNull(result,
+				"The expression " + this.expression.getExpressionString() + " returned null. Expected true|false");
+		return result;
 	}
 
 	/**

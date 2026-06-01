@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2025 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -419,8 +419,8 @@ public class OidcAuthorizedClientRefreshedEventListenerTests {
 	}
 
 	@Test
-	public void onApplicationEventWhenIdTokenAuthenticatedAtDoesNotMatchThenThrowsOAuth2AuthenticationException() {
-		Instant authTime = this.oidcUser.getAuthenticatedAt().plus(5, ChronoUnit.SECONDS);
+	public void onApplicationEventWhenIdTokenAuthenticatedAtBeforeCurrentAuthenticatedAtThenThrowsOAuth2AuthenticationException() {
+		Instant authTime = this.oidcUser.getAuthenticatedAt().minus(5, ChronoUnit.MINUTES);
 		Jwt jwt = createJwt().claim(IdTokenClaimNames.AUTH_TIME, authTime).build();
 		SecurityContextImpl securityContext = new SecurityContextImpl(this.authentication);
 		given(this.securityContextHolderStrategy.getContext()).willReturn(securityContext);
@@ -440,8 +440,26 @@ public class OidcAuthorizedClientRefreshedEventListenerTests {
 		verifyNoInteractions(this.userService, this.applicationEventPublisher);
 	}
 
+	// gh-18839
 	@Test
-	public void onApplicationEventWhenIdTokenAuthenticatedAtMatchesThenOidcUserRefreshedEventPublished() {
+	public void onApplicationEventWhenIdTokenAuthenticatedAtAfterCurrentAuthenticatedAtThenOidcUserRefreshedEventPublished() {
+		Instant authTime = this.oidcUser.getAuthenticatedAt().plus(5, ChronoUnit.MINUTES);
+		Jwt jwt = createJwt().claim(IdTokenClaimNames.AUTH_TIME, authTime).build();
+		SecurityContextImpl securityContext = new SecurityContextImpl(this.authentication);
+		given(this.securityContextHolderStrategy.getContext()).willReturn(securityContext);
+		given(this.jwtDecoder.decode(anyString())).willReturn(jwt);
+		given(this.userService.loadUser(any(OidcUserRequest.class))).willReturn(this.oidcUser);
+
+		OAuth2AuthorizedClientRefreshedEvent authorizedClientRefreshedEvent = new OAuth2AuthorizedClientRefreshedEvent(
+				this.accessTokenResponse, this.authorizedClient);
+		this.eventListener.onApplicationEvent(authorizedClientRefreshedEvent);
+
+		verify(this.applicationEventPublisher).publishEvent(any(OidcUserRefreshedEvent.class));
+		verifyNoMoreInteractions(this.applicationEventPublisher);
+	}
+
+	@Test
+	public void onApplicationEventWhenIdTokenAuthenticatedAtMatchesCurrentAuthenticatedAtThenOidcUserRefreshedEventPublished() {
 		Instant authTime = this.authentication.getPrincipal().getAttribute(IdTokenClaimNames.AUTH_TIME);
 		Jwt jwt = createJwt().claim(IdTokenClaimNames.AUTH_TIME, authTime).build();
 		SecurityContextImpl securityContext = new SecurityContextImpl(this.authentication);

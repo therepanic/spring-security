@@ -1,5 +1,7 @@
+@file:Suppress("DEPRECATION", "PLATFORM_CLASS_MAPPED_TO_KOTLIN", "UNCHECKED_CAST")
+
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +148,7 @@ class Saml2DslTests {
         val request = MockMvcRequestBuilders.get("/custom/auth/sso")
         this.mockMvc.perform(request)
             .andExpect(MockMvcResultMatchers.status().isFound())
-            .andExpect(MockMvcResultMatchers.redirectedUrl("http://localhost/custom/auth/sso?entityId=simplesamlphp"))
+            .andExpect(MockMvcResultMatchers.redirectedUrl("/custom/auth/sso?entityId=simplesamlphp"))
         request.queryParam("entityId", registration.registrationId)
         val result: MvcResult =
             this.mockMvc.perform(request).andExpect(MockMvcResultMatchers.status().isFound()).andReturn()

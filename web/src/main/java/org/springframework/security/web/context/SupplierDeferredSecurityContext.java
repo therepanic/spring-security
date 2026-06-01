@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.log.LogMessage;
 import org.springframework.security.core.context.DeferredSecurityContext;
@@ -38,7 +39,7 @@ final class SupplierDeferredSecurityContext implements DeferredSecurityContext {
 
 	private final SecurityContextHolderStrategy strategy;
 
-	private SecurityContext securityContext;
+	private @Nullable SecurityContext securityContext;
 
 	private boolean missingContext;
 
@@ -48,7 +49,7 @@ final class SupplierDeferredSecurityContext implements DeferredSecurityContext {
 	}
 
 	@Override
-	public SecurityContext get() {
+	public @Nullable SecurityContext get() {
 		init();
 		return this.securityContext;
 	}

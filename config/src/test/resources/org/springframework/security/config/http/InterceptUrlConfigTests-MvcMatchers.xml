@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2002-2018 the original author or authors.
+  ~ Copyright 2004-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@
 			http://www.springframework.org/schema/mvc
 			https://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
-	<http auto-config="true" request-matcher="mvc" use-authorization-manager="false">
+	<http auto-config="true" request-matcher="path" use-authorization-manager="false">
 		<intercept-url pattern="/path" access="denyAll"/>
 		<http-basic/>
 	</http>

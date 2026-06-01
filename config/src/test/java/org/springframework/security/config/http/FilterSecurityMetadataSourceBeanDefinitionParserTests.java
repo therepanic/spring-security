@@ -1,5 +1,5 @@
 /*
- * Copyright 2002-2022 the original author or authors.
+ * Copyright 2004-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,7 @@ public class FilterSecurityMetadataSourceBeanDefinitionParserTests {
 	public void interceptUrlsSupportPropertyPlaceholders() {
 		System.setProperty("secure.url", "/secure");
 		System.setProperty("secure.role", "ROLE_A");
-		setContext("<b:bean class='org.springframework.beans.factory.config.PropertyPlaceholderConfigurer'/>"
+		setContext("<b:bean class='org.springframework.context.support.PropertySourcesPlaceholderConfigurer'/>"
 				+ "<filter-security-metadata-source id='fids' use-expressions='false'>"
 				+ "   <intercept-url pattern='${secure.url}' access='${secure.role}'/>"
 				+ "</filter-security-metadata-source>");
